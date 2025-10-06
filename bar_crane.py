@@ -4,157 +4,240 @@ import pymunk.pygame_util
 import sys
 
 
-# Initialize Pygame and Pymunk
-pygame.init()
-WIDTH = 1200
-HEIGHT = 800
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Bouncing Ball Simulation")
+class GameObject:
+    def __init__(self, space):
+        self.space = space
+        self.body = None
+        self.shape = None
 
-# Create a pymunk space
-space = pymunk.Space()
-space.gravity = (0, 900)  # Set gravity (y is positive downwards)
 
-# Create the load
-mass = 90
-radius = 15
-moment = pymunk.moment_for_circle(mass, 0, radius)
-ball_body = pymunk.Body(mass, moment)
-ball_body.position = (WIDTH // 2, HEIGHT * 0.75)  # Start position
-ball_shape = pymunk.Circle(ball_body, radius)
-ball_shape.elasticity = 0.95  # Make it bouncy
-ball_shape.friction = 0.9
-space.add(ball_body, ball_shape)
+class Runner(GameObject):
+    def __init__(self, space, position, width=100, height=20):
+        super().__init__(space)
+        self.width = width
+        self.height = height
 
-# Create the ground (static line)
-bar_body = pymunk.Body(body_type=pymunk.Body.STATIC)
-BAR_LEFT_Y = 0.1 * HEIGHT
-BAR_RIGHT_Y = BAR_LEFT_Y
-BAR_RIGHT_X = WIDTH - 50
-BAR_LEFT_X = 50
-bar_shape = pymunk.Segment(
-    bar_body, (BAR_RIGHT_X, BAR_LEFT_Y), (BAR_RIGHT_X, BAR_RIGHT_Y), 5
-)
-bar_shape.elasticity = 0.95
-bar_shape.friction = 0.9
-space.add(bar_body, bar_shape)
+        # Create kinematic body
+        self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+        self.body.position = position
 
-# Constants for simulation
-RUNNER_WIDTH = 100
-RUNNER_HEIGHT = 20
-RUNNER_SPEED = 300  # pixels per second
-RUNNER_MAX_SPEED = 600  # maximum speed in pixels per second
-ROPE_LENGTH = 100  # length of the rope in pixels
-ROPE_SEGMENTS = 1  # number of segments in rope
-
-# Create Runner
-runner_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
-CENTER_OF_BAR = ((BAR_RIGHT_X + BAR_LEFT_X) / 2, BAR_LEFT_Y + BAR_RIGHT_Y / 2)
-runner_body.position = CENTER_OF_BAR
-runner_shape = pymunk.Poly(
-    runner_body,
-    vertices=[
-        (0, 0),
-        (0, RUNNER_HEIGHT),
-        (RUNNER_WIDTH, RUNNER_HEIGHT),
-        (RUNNER_WIDTH, 0),
-    ],
-    transform=pymunk.Transform(tx=-0.5 * RUNNER_WIDTH, ty=-0.5 * RUNNER_HEIGHT),
-    radius=1,
-)
-runner_shape.color = (0, 255, 0, 255)
-space.add(runner_body, runner_shape)
-
-# Create direct connection between runner and ball with PinJoint
-connection = pymunk.PinJoint(
-    runner_body,
-    ball_body,
-    (0, RUNNER_HEIGHT / 2),  # Attach point on runner (bottom center)
-    (0, 0),  # Attach point on ball (center)
-)
-connection.collide_bodies = False  # Prevent collision between runner and ball
-space.add(connection)
-
-# Game loop
-clock = pygame.time.Clock()
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            # Reset ball position on mouse click
-            [mouse_position_x, mouse_position_y] = pygame.mouse.get_pos()
-            ball_body.position = (mouse_position_x, mouse_position_y)
-            ball_body.velocity = (0, 0)
-
-    # Handle continuous keyboard input
-    keys = pygame.key.get_pressed()
-    current_velocity_x = runner_body.velocity.x
-    current_position_x = runner_body.position.x
-
-    # Define screen bounds with margin
-    MARGIN = RUNNER_WIDTH / 2 + 10
-    LEFT_BOUND = MARGIN
-    RIGHT_BOUND = WIDTH - MARGIN
-
-    # Check for screen bounds collision and bounce
-    if current_position_x <= LEFT_BOUND and current_velocity_x < 0:
-        # Bounce off left wall
-        runner_body.velocity = (-current_velocity_x, 0)
-        runner_body.position = (LEFT_BOUND, runner_body.position.y)
-    elif current_position_x >= RIGHT_BOUND and current_velocity_x > 0:
-        # Bounce off right wall
-        runner_body.velocity = (-current_velocity_x, 0)
-        runner_body.position = (RIGHT_BOUND, runner_body.position.y)
-
-    # Normal movement handling
-    if keys[pygame.K_LEFT]:
-        # Accelerate left
-        new_velocity = max(
-            current_velocity_x - RUNNER_SPEED * (1 / 60.0), -RUNNER_MAX_SPEED
+        # Create rectangular shape
+        self.shape = pymunk.Poly(
+            self.body,
+            vertices=[
+                (0, 0),
+                (0, height),
+                (width, height),
+                (width, 0),
+            ],
+            transform=pymunk.Transform(tx=-0.5 * width, ty=-0.5 * height),
+            radius=1,
         )
-        runner_body.velocity = (new_velocity, 0)
-    elif keys[pygame.K_RIGHT]:
-        # Accelerate right
-        new_velocity = min(
-            current_velocity_x + RUNNER_SPEED * (1 / 60.0), RUNNER_MAX_SPEED
+        self.shape.color = (0, 255, 0, 255)
+        space.add(self.body, self.shape)
+
+    def update_velocity(self, velocity):
+        self.body.velocity = velocity
+
+
+class Ball(GameObject):
+    def __init__(self, space, position, mass=90, radius=15):
+        super().__init__(space)
+        self.radius = radius
+
+        # Create dynamic body
+        moment = pymunk.moment_for_circle(mass, 0, radius)
+        self.body = pymunk.Body(mass, moment)
+        self.body.position = position
+
+        # Create circle shape
+        self.shape = pymunk.Circle(self.body, radius)
+        self.shape.elasticity = 0.95
+        self.shape.friction = 0.9
+        space.add(self.body, self.shape)
+
+    def reset_position(self, position):
+        self.body.position = position
+        self.body.velocity = (0, 0)
+
+
+class Arm(GameObject):
+    def __init__(self, space, runner_body, length=20):
+        super().__init__(space)
+        self.length = length
+
+        # Create kinematic body
+        self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+        self.body.position = runner_body.position
+
+        # Create segment shape
+        self.shape = pymunk.Segment(
+            self.body,
+            (0, 0),
+            (0, length),
+            4,  # thickness
         )
-        runner_body.velocity = (new_velocity, 0)
-    else:
-        # Decelerate when no keys are pressed
-        if abs(current_velocity_x) > 1:
-            # Apply deceleration in the opposite direction of movement
-            if current_velocity_x > 0:
-                new_velocity = max(0, current_velocity_x - RUNNER_SPEED * (1 / 60.0))
-            else:
-                new_velocity = min(0, current_velocity_x + RUNNER_SPEED * (1 / 60.0))
-            runner_body.velocity = (new_velocity, 0)
+        self.shape.color = (100, 100, 100, 255)
+        space.add(self.body, self.shape)
+
+    def update_position(self, runner_position, runner_height):
+        self.body.position = runner_position + (0, runner_height / 2)
+
+
+class Crane:
+    def __init__(self, space, runner, ball):
+        self.space = space
+        self.runner = runner
+        self.ball = ball
+
+        # Create connection between runner and ball
+        self.joint = pymunk.PinJoint(
+            runner.body, ball.body, (0, runner.height / 2), (0, 0)
+        )
+        self.joint.collide_bodies = False
+        space.add(self.joint)
+
+
+class Game:
+    def __init__(self):
+        # Initialize Pygame and Pymunk
+        pygame.init()
+
+        # Constants
+        self.WIDTH = 1200
+        self.HEIGHT = 800
+        self.RUNNER_SPEED = 300
+        self.RUNNER_MAX_SPEED = 600
+        self.ARM_LENGTH = 20
+        self.RUNNER_WIDTH = 100
+        self.RUNNER_HEIGHT = 20
+
+        # Set up display
+        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        pygame.display.set_caption("Crane Simulation")
+
+        # Create physics space
+        self.space = pymunk.Space()
+        self.space.gravity = (0, 900)
+
+        # Create game objects
+        self.setup_objects()
+
+        # Clock for frame rate
+        self.clock = pygame.time.Clock()
+
+        # Drawing options
+        self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
+
+    def setup_objects(self):
+        # Calculate positions
+        bar_left_y = 0.1 * self.HEIGHT
+        bar_right_y = bar_left_y
+        bar_right_x = self.WIDTH - 50
+        bar_left_x = 50
+        center_pos = ((bar_right_x + bar_left_x) // 2, bar_left_y)
+
+        # Create static bar
+        bar_body = pymunk.Body(body_type=pymunk.Body.STATIC)
+        bar_shape = pymunk.Segment(
+            bar_body, (bar_left_x, bar_left_y), (bar_right_x, bar_right_y), 5
+        )
+        bar_shape.elasticity = 0.95
+        bar_shape.friction = 0.9
+        self.space.add(bar_body, bar_shape)
+
+        # Create objects
+        self.runner = Runner(
+            self.space, center_pos, self.RUNNER_WIDTH, self.RUNNER_HEIGHT
+        )
+        self.ball = Ball(self.space, (self.WIDTH // 2, self.HEIGHT * 0.75))
+        self.arm = Arm(self.space, self.runner.body, self.ARM_LENGTH)
+        self.crane = Crane(self.space, self.runner, self.ball)
+
+    def handle_input(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                self.ball.reset_position(mouse_pos)
+
+        # Handle continuous keyboard input
+        keys = pygame.key.get_pressed()
+        current_velocity_x = self.runner.body.velocity.x
+        current_position_x = self.runner.body.position.x
+
+        # Define screen bounds
+        margin = self.RUNNER_WIDTH / 2 + 10
+        left_bound = margin
+        right_bound = self.WIDTH - margin
+
+        # Handle bounds checking
+        if current_position_x <= left_bound and current_velocity_x < 0:
+            self.runner.update_velocity((-current_velocity_x, 0))
+            self.runner.body.position = (left_bound, self.runner.body.position.y)
+        elif current_position_x >= right_bound and current_velocity_x > 0:
+            self.runner.update_velocity((-current_velocity_x, 0))
+            self.runner.body.position = (right_bound, self.runner.body.position.y)
+
+        # Movement handling
+        new_velocity = (0, 0)
+        if keys[pygame.K_LEFT]:
+            new_velocity = (
+                max(
+                    current_velocity_x - self.RUNNER_SPEED * (1 / 60.0),
+                    -self.RUNNER_MAX_SPEED,
+                ),
+                0,
+            )
+        elif keys[pygame.K_RIGHT]:
+            new_velocity = (
+                min(
+                    current_velocity_x + self.RUNNER_SPEED * (1 / 60.0),
+                    self.RUNNER_MAX_SPEED,
+                ),
+                0,
+            )
         else:
-            runner_body.velocity = (0, 0)
+            if abs(current_velocity_x) > 1:
+                decel = self.RUNNER_SPEED * (1 / 60.0)
+                if current_velocity_x > 0:
+                    new_velocity = (max(0, current_velocity_x - decel), 0)
+                else:
+                    new_velocity = (min(0, current_velocity_x + decel), 0)
 
-    # Update physics
-    space.step(1 / 60.0)
+        self.runner.update_velocity(new_velocity)
+        return True
 
-    # Draw everything
-    screen.fill((255, 255, 255))  # White background
+    def update(self):
+        # Update arm position
+        self.arm.update_position(self.runner.body.position, self.RUNNER_HEIGHT)
 
-    # Draw the ball
-    pos = ball_body.position
-    draw_options = pymunk.pygame_util.DrawOptions(screen)
-    space.debug_draw(draw_options)
-    # # Draw the ground
-    # pygame.draw.line(screen, (0, 0, 0), (50, BAR_LEFT_Y), (WIDTH - 50, BAR_RIGHT_Y), 5)
+        # Update physics
+        self.space.step(1 / 60.0)
 
-    # pygame.draw.rect(
-    #     screen,
-    #     (0, 255, 0),
-    #     pygame.Rect(
-    #         int(runner_body.position.x - 0.5 * RUNNER_WIDTH),
-    #         int(runner_body.position.y - 0.5 * RUNNER_HEIGHT),
-    #         RUNNER_WIDTH,
-    #         RUNNER_HEIGHT,
-    #     ),
-    # )
-    pygame.display.flip()
-    clock.tick(60)
+    def draw(self):
+        # Clear screen
+        self.screen.fill((255, 255, 255))
+
+        # Draw all objects using debug draw
+        self.space.debug_draw(self.draw_options)
+
+        # Update display
+        pygame.display.flip()
+        self.clock.tick(60)
+
+    def run(self):
+        running = True
+        while running:
+            running = self.handle_input()
+            self.update()
+            self.draw()
+
+        pygame.quit()
+        sys.exit()
+
+
+if __name__ == "__main__":
+    game = Game()
+    game.run()
