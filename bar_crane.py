@@ -4,6 +4,27 @@ import pymunk.pygame_util
 import sys
 
 
+class VisualObject:
+    def __init__(self, position, color=(150, 150, 150)):
+        self.position = position
+        self.color = color
+
+    def draw(self, screen):
+        pass
+
+
+class StaticLine(VisualObject):
+    def __init__(self, start_pos, end_pos, color=(150, 150, 150), thickness=2):
+        super().__init__(start_pos, color)
+        self.end_pos = end_pos
+        self.thickness = thickness
+
+    def draw(self, screen):
+        pygame.draw.line(
+            screen, self.color, self.position, self.end_pos, self.thickness
+        )
+
+
 class GameObject:
     def __init__(self, space):
         self.space = space
@@ -120,6 +141,9 @@ class Game:
         self.space = pymunk.Space()
         self.space.gravity = (0, 900)
 
+        # Create visual-only objects list (will be populated in setup_objects)
+        self.non_physical_objects = []
+
         # Create game objects
         self.setup_objects()
 
@@ -137,14 +161,14 @@ class Game:
         bar_left_x = 50
         center_pos = ((bar_right_x + bar_left_x) // 2, bar_left_y)
 
-        # Create static bar
-        bar_body = pymunk.Body(body_type=pymunk.Body.STATIC)
-        bar_shape = pymunk.Segment(
-            bar_body, (bar_left_x, bar_left_y), (bar_right_x, bar_right_y), 5
+        # Create visual bar
+        bar_line = StaticLine(
+            (bar_left_x, bar_left_y),
+            (bar_right_x, bar_right_y),
+            (100, 100, 100),  # Gray color
+            5,  # thickness
         )
-        bar_shape.elasticity = 0.95
-        bar_shape.friction = 0.9
-        self.space.add(bar_body, bar_shape)
+        self.non_physical_objects.append(bar_line)
 
         # Create objects
         self.runner = Runner(
@@ -222,6 +246,10 @@ class Game:
 
         # Draw all objects using debug draw
         self.space.debug_draw(self.draw_options)
+
+        # Draw all visual-only objects
+        for visual_obj in self.non_physical_objects:
+            visual_obj.draw(self.screen)
 
         # Update display
         pygame.display.flip()
