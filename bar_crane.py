@@ -129,7 +129,6 @@ class Game:
         self.HEIGHT = 800
         self.RUNNER_SPEED = 300
         self.RUNNER_MAX_SPEED = 600
-        self.ARM_LENGTH = 20
         self.RUNNER_WIDTH = 100
         self.RUNNER_HEIGHT = 20
 
@@ -175,7 +174,6 @@ class Game:
             self.space, center_pos, self.RUNNER_WIDTH, self.RUNNER_HEIGHT
         )
         self.ball = Ball(self.space, (self.WIDTH // 2, self.HEIGHT * 0.75))
-        self.arm = Arm(self.space, self.runner.body, self.ARM_LENGTH)
         self.crane = Crane(self.space, self.runner, self.ball)
 
     def handle_input(self):
@@ -234,9 +232,6 @@ class Game:
         return True
 
     def update(self):
-        # Update arm position
-        self.arm.update_position(self.runner.body.position, self.RUNNER_HEIGHT)
-
         # Update physics
         self.space.step(1 / 60.0)
 
