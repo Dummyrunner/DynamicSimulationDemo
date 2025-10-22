@@ -126,6 +126,7 @@ class Game:
 
         # Create visual-only objects list (will be populated in setup_objects)
         self.non_physical_objects = []
+        self.control_active = True
 
         # Create game objects
         self.setup_objects()
@@ -207,6 +208,10 @@ class Game:
         elif current_position_x >= right_bound and current_velocity_x > 0:
             self.runner.body.position = (right_bound, self.runner.body.position.y)
             return (-current_velocity_x, 0)
+
+        if keys[pygame.K_c]:
+            # toggle control
+            self.control_active = not self.control_active
 
         # Calculate new velocity based on input
         if keys[pygame.K_LEFT]:
@@ -376,17 +381,15 @@ class Game:
             tuple: (x, y) velocity adjustment vector
         """
         # Controller gains
-        Ktheta = 100.0  # Proportional gain for angle (increased for stronger position control)
-        Kdx = (
-            -5.0
-        )  # Derivative gain for angular velocity (increased for better damping)
+        Kangle = 100.0
+        Krunnervelocity = -5.0
 
         angle = feedback["angle"]
         angular_velocity = feedback["angular_velocity"]
 
         # Calculate horizontal velocity adjustment
         # Negative gains because positive angle needs negative correction
-        control_signal = -Ktheta * angle - Kdx * angular_velocity
+        control_signal = -Kangle * angle - Krunnervelocity * angular_velocity
 
         # Limit maximum control signal to prevent too aggressive movement
         max_control = 400  # Maximum velocity adjustment
@@ -413,8 +416,12 @@ class Game:
 
             # Calculate and apply control adjustment
             control_velocity = self.controller_input(self.system_output_data)
-            self.current_control_signal = control_velocity  # Store for visualization
-            self.runner.add_to_velocity(control_velocity)
+
+            if self.control_active:
+                self.current_control_signal = (
+                    control_velocity  # Store for visualization
+                )
+                self.runner.add_to_velocity(control_velocity)
 
             # Update simulation
             self.update_physics()
