@@ -158,15 +158,27 @@ class Game:
         self.ball = Ball(self.space, (self.WIDTH // 2, self.HEIGHT * 0.75))
         self.crane = Crane(self.space, self.runner, self.ball)
 
-    def handle_input(self):
+    def check_quit_or_ball_relocation(self):
+        """Check if the application should quit.
+
+        Returns:
+            bool: True if the application should quit, False otherwise
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return False
+                return True
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 self.ball.reset_position(mouse_pos)
+        return False
 
-        # Handle continuous keyboard input
+    def handle_input(self):
+        """Calculate new velocity based on input and constraints
+
+        Returns:
+            tuple: (x, y) new velocity vector
+        """
+        # Get current state
         keys = pygame.key.get_pressed()
         current_velocity_x = self.runner.body.velocity.x
         current_position_x = self.runner.body.position.x
@@ -176,16 +188,15 @@ class Game:
         left_bound = margin
         right_bound = self.WIDTH - margin
 
-        # Handle bounds checking
+        # Handle bounds checking and return bounced velocity if needed
         if current_position_x <= left_bound and current_velocity_x < 0:
-            self.runner.update_velocity((-current_velocity_x, 0))
             self.runner.body.position = (left_bound, self.runner.body.position.y)
+            return (-current_velocity_x, 0)
         elif current_position_x >= right_bound and current_velocity_x > 0:
-            self.runner.update_velocity((-current_velocity_x, 0))
             self.runner.body.position = (right_bound, self.runner.body.position.y)
+            return (-current_velocity_x, 0)
 
-        # Movement handling
-        new_velocity = (0, 0)
+        # Calculate new velocity based on input
         if keys[pygame.K_LEFT]:
             new_velocity = (
                 max(
@@ -203,15 +214,17 @@ class Game:
                 0,
             )
         else:
+            # Apply deceleration when no input
             if abs(current_velocity_x) > 1:
                 decel = self.RUNNER_SPEED * (1 / 60.0)
                 if current_velocity_x > 0:
                     new_velocity = (max(0, current_velocity_x - decel), 0)
                 else:
                     new_velocity = (min(0, current_velocity_x + decel), 0)
+            else:
+                new_velocity = (0, 0)
 
-        self.runner.update_velocity(new_velocity)
-        return True
+        return new_velocity
 
     def update_physics(self):
         # Update physics
@@ -287,12 +300,25 @@ class Game:
     def run(self):
         running = True
         while running:
-            running = self.handle_input()
+            # Check for quit event
+            if self.check_quit_or_ball_relocation():
+                running = False
+                continue
+
+            # Get new velocity from input
+            new_velocity = self.handle_input()
+
+            # Update runner velocity
+            self.runner.update_velocity(new_velocity)
+
+            # Update simulation
             self.update_physics()
             self.update_ui()
+            self.system_output_data = self.calculate_system_output()
 
             # Update simulation time
             self.simulation_time += 1 / 60.0
+
         pygame.quit()
         sys.exit()
 
