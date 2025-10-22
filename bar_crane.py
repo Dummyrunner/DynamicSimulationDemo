@@ -2,6 +2,7 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 import sys
+import math
 
 
 class VisualObject:
@@ -130,6 +131,8 @@ class Game:
 
         # Drawing options
         self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
+
+        self.simulation_time = 0.0
 
     def setup_objects(self):
         # Calculate positions
