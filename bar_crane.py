@@ -61,6 +61,12 @@ class Runner(GameObject):
     def update_velocity(self, velocity):
         self.body.velocity = velocity
 
+    def add_to_velocity(self, delta_velocity):
+        self.body.velocity = (
+            self.body.velocity.x + delta_velocity[0],
+            self.body.velocity.y + delta_velocity[1],
+        )
+
 
 class Ball(GameObject):
     def __init__(self, space, position, mass=90, radius=15):
@@ -125,12 +131,18 @@ class Game:
         self.setup_objects()
 
         self.system_output_data = dict()
+        self.system_output_data["angle"] = 0
+        self.system_output_data["angular_velocity"] = 0
+        self.system_output_data["runner_position"] = 0
+        self.system_output_data["runner_velocity"] = 0
 
         # Clock for frame rate
         self.clock = pygame.time.Clock()
 
         # Drawing options
         self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
+
+        self.recent_outputs = dict()
 
         self.simulation_time = 0.0
 
@@ -278,9 +290,16 @@ class Game:
         system_output["angle"] = self._calculate_angle_radian(
             self.runner.body.position, self.ball.body.position
         )
-        system_output["angular_velocity"] = self.ball.body.angular_velocity
+        system_output["angular_velocity"] = (
+            self._calculate_angle_velocity_radian_per_sec(
+                self.runner.body.position,
+                self.ball.body.position,
+                self.ball.body.velocity,
+            )
+        )
         system_output["runner_position"] = self.runner.body.position.x
         system_output["runner_velocity"] = self.runner.body.velocity.x
+        return system_output
 
     def update_ui(self):
         # Clear screen
@@ -297,19 +316,42 @@ class Game:
         pygame.display.flip()
         self.clock.tick(60)
 
+    def controller_input(self, feedback):
+        """Calculate control input as velocity adjustment
+
+        Returns:
+            tuple: (x, y) velocity adjustment vector
+        """
+        Ktheta = 10.0  # Gain for angle
+        Kdx = 5.0  # Gain for angular velocity
+        angle = feedback["angle"]
+        angular_velocity = feedback["angular_velocity"]
+
+        # Calculate horizontal velocity adjustment
+        control_signal = -Ktheta * angle - Kdx * angular_velocity
+
+        # Return as velocity vector (x, y)
+        return (control_signal, 0)
+
     def run(self):
         running = True
+
+        # Initialize system output data
+        self.system_output_data = self.calculate_system_output()
+
         while running:
             # Check for quit event
             if self.check_quit_or_ball_relocation():
                 running = False
                 continue
 
-            # Get new velocity from input
+            # Get new velocity from input and control
             new_velocity = self.handle_input()
-
-            # Update runner velocity
             self.runner.update_velocity(new_velocity)
+
+            # Calculate and apply control adjustment
+            control_velocity = self.controller_input(self.system_output_data)
+            self.runner.add_to_velocity(control_velocity)
 
             # Update simulation
             self.update_physics()
