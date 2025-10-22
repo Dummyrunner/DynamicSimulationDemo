@@ -310,7 +310,7 @@ class Game:
         runner_pos = self.runner.body.position
 
         # Scale factor to make arrow visible (adjust this value to change arrow length)
-        scale = 50.0  # Increased scale to make arrow more visible
+        scale = 5  # Increased scale to make arrow more visible
 
         # Calculate arrow end point
         arrow_end = (
@@ -375,13 +375,22 @@ class Game:
         Returns:
             tuple: (x, y) velocity adjustment vector
         """
-        Ktheta = 10.0  # Gain for angle
-        Kdx = 5.0  # Gain for angular velocity
+        # Controller gains
+        Ktheta = 100.0  # Proportional gain for angle (increased for stronger position control)
+        Kdx = (
+            -5.0
+        )  # Derivative gain for angular velocity (increased for better damping)
+
         angle = feedback["angle"]
         angular_velocity = feedback["angular_velocity"]
 
         # Calculate horizontal velocity adjustment
+        # Negative gains because positive angle needs negative correction
         control_signal = -Ktheta * angle - Kdx * angular_velocity
+
+        # Limit maximum control signal to prevent too aggressive movement
+        max_control = 400  # Maximum velocity adjustment
+        control_signal = max(min(control_signal, max_control), -max_control)
 
         # Return as velocity vector (x, y)
         return (control_signal, 0)
