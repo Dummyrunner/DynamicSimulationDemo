@@ -82,29 +82,6 @@ class Ball(GameObject):
         self.body.velocity = (0, 0)
 
 
-class Arm(GameObject):
-    def __init__(self, space, runner_body, length=20):
-        super().__init__(space)
-        self.length = length
-
-        # Create kinematic body
-        self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
-        self.body.position = runner_body.position
-
-        # Create segment shape
-        self.shape = pymunk.Segment(
-            self.body,
-            (0, 0),
-            (0, length),
-            4,  # thickness
-        )
-        self.shape.color = (100, 100, 100, 255)
-        space.add(self.body, self.shape)
-
-    def update_position(self, runner_position, runner_height):
-        self.body.position = runner_position + (0, runner_height / 2)
-
-
 class Crane:
     def __init__(self, space, runner, ball):
         self.space = space
@@ -145,6 +122,8 @@ class Game:
 
         # Create game objects
         self.setup_objects()
+
+        self.system_output_data = dict()
 
         # Clock for frame rate
         self.clock = pygame.time.Clock()
@@ -231,11 +210,63 @@ class Game:
         self.runner.update_velocity(new_velocity)
         return True
 
-    def update(self):
+    def update_physics(self):
         # Update physics
         self.space.step(1 / 60.0)
 
-    def draw(self):
+    def _calculate_angle_radian(self, runner_position, ball_position):
+        # Calculate vector from runner to ball
+        dx = ball_position.x - runner_position.x
+        dy = ball_position.y - runner_position.y
+
+        # Calculate angle between this vector and vertical (0, 1)
+        # pygame.math.Vector2.angle_to returns angle in degrees
+        # Negative sign because pygame's y-axis is inverted
+        angle = -pygame.math.Vector2(dx, dy).angle_to((0, 1))
+
+        # Convert to radians for physics calculations
+        return math.radians(angle)
+
+    def _calculate_angle_velocity_radian_per_sec(
+        self, runner_position, ball_position, ball_velocity
+    ):
+        # Calculate vector from runner to ball
+        dx = ball_position.x - runner_position.x
+        dy = ball_position.y - runner_position.y
+
+        # Position vector
+        pos_vector = pygame.math.Vector2(dx, dy)
+        pos_magnitude = pos_vector.length()
+
+        if pos_magnitude == 0:
+            return 0.0
+
+        # Unit position vector
+        pos_unit_vector = pos_vector / pos_magnitude
+
+        # Perpendicular vector to position vector
+        perp_vector = pygame.math.Vector2(-pos_unit_vector.y, pos_unit_vector.x)
+
+        # Project ball velocity onto perpendicular vector
+        ball_velocity_vector = pygame.math.Vector2(ball_velocity.x, ball_velocity.y)
+        tangential_velocity = ball_velocity_vector.dot(perp_vector)
+
+        # Angular velocity = tangential velocity / radius
+        angular_velocity = tangential_velocity / pos_magnitude
+
+        return angular_velocity
+
+    def calculate_system_output(self):
+        """Return system output data in vector form."""
+        system_output = dict()
+        system_output["angle"] = self._calculate_angle_radian(
+            self.runner.body.position, self.ball.body.position
+        )
+        system_output["angular_velocity"] = self.ball.body.angular_velocity
+        system_output["runner_position"] = self.runner.body.position.x
+        system_output["runner_velocity"] = self.runner.body.velocity.x
+
+    def update_ui(self):
         # Clear screen
         self.screen.fill((255, 255, 255))
 
@@ -254,9 +285,11 @@ class Game:
         running = True
         while running:
             running = self.handle_input()
-            self.update()
-            self.draw()
+            self.update_physics()
+            self.update_ui()
 
+            # Update simulation time
+            self.simulation_time += 1 / 60.0
         pygame.quit()
         sys.exit()
 
