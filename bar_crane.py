@@ -301,6 +301,55 @@ class Game:
         system_output["runner_velocity"] = self.runner.body.velocity.x
         return system_output
 
+    def draw_control_arrow(self, control_signal):
+        """Draw an arrow representing the control signal direction and magnitude."""
+        if control_signal == (0, 0):
+            return
+
+        # Get runner's center position
+        runner_pos = self.runner.body.position
+
+        # Scale factor to make arrow visible (adjust this value to change arrow length)
+        scale = 50.0  # Increased scale to make arrow more visible
+
+        # Calculate arrow end point
+        arrow_end = (
+            runner_pos.x + control_signal[0] * scale,
+            runner_pos.y + control_signal[1] * scale,
+        )
+
+        # Draw main line of arrow
+        pygame.draw.line(
+            self.screen,
+            (255, 0, 0),  # Red color
+            (runner_pos.x, runner_pos.y),
+            arrow_end,
+            2,  # Line thickness
+        )
+
+        # Calculate and draw arrow head
+        if control_signal[0] != 0:  # Only if we have horizontal movement
+            # Arrow head size
+            head_size = 10
+            angle = math.pi / 6  # 30 degrees for arrow head
+
+            # Direction of the arrow
+            direction = 1 if control_signal[0] > 0 else -1
+
+            # Calculate arrow head points
+            head_point1 = (
+                arrow_end[0] - direction * head_size * math.cos(angle),
+                arrow_end[1] - head_size * math.sin(angle),
+            )
+            head_point2 = (
+                arrow_end[0] - direction * head_size * math.cos(angle),
+                arrow_end[1] + head_size * math.sin(angle),
+            )
+
+            # Draw arrow head
+            pygame.draw.line(self.screen, (255, 0, 0), arrow_end, head_point1, 2)
+            pygame.draw.line(self.screen, (255, 0, 0), arrow_end, head_point2, 2)
+
     def update_ui(self):
         # Clear screen
         self.screen.fill((255, 255, 255))
@@ -311,6 +360,10 @@ class Game:
         # Draw all visual-only objects
         for visual_obj in self.non_physical_objects:
             visual_obj.draw(self.screen)
+
+        # Draw control signal visualization if we have current control signal
+        if hasattr(self, "current_control_signal"):
+            self.draw_control_arrow(self.current_control_signal)
 
         # Update display
         pygame.display.flip()
@@ -351,14 +404,15 @@ class Game:
 
             # Calculate and apply control adjustment
             control_velocity = self.controller_input(self.system_output_data)
+            self.current_control_signal = control_velocity  # Store for visualization
             self.runner.add_to_velocity(control_velocity)
 
             # Update simulation
             self.update_physics()
             self.update_ui()
-            self.system_output_data = self.calculate_system_output()
-
-            # Update simulation time
+            self.system_output_data = (
+                self.calculate_system_output()
+            )  # Update simulation time
             self.simulation_time += 1 / 60.0
 
         pygame.quit()
