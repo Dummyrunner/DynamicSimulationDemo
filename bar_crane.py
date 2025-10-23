@@ -1,8 +1,11 @@
 import pygame
 import pymunk
+from pymunk import Vec2d
 import pymunk.pygame_util
 import sys
 import math
+
+SAMPLE_TIME = 1 / 60.0
 
 
 class VisualObject:
@@ -57,15 +60,6 @@ class Runner(GameObject):
         )
         self.shape.color = (0, 255, 0, 255)
         space.add(self.body, self.shape)
-
-    def update_velocity(self, velocity):
-        self.body.velocity = velocity
-
-    def add_to_velocity(self, delta_velocity):
-        self.body.velocity = (
-            self.body.velocity.x + delta_velocity[0],
-            self.body.velocity.y + delta_velocity[1],
-        )
 
 
 class Ball(GameObject):
@@ -171,6 +165,39 @@ class Game:
         self.ball = Ball(self.space, (self.WIDTH // 2, self.HEIGHT * 0.75))
         self.crane = Crane(self.space, self.runner, self.ball)
 
+    def update_runner_velocity(self, velocity):
+        """Update runner's velocity with limits applied.
+
+        Args:
+            velocity: Vec2d or tuple representing the new velocity
+        """
+        # Convert input to Vec2d if it isn't already
+        if not isinstance(velocity, Vec2d):
+            velocity = Vec2d(velocity[0], velocity[1])
+
+        # Apply speed limit to horizontal movement
+        if abs(velocity.x) > self.RUNNER_MAX_SPEED:
+            velocity.x = (
+                self.RUNNER_MAX_SPEED if velocity.x > 0 else -self.RUNNER_MAX_SPEED
+            )
+
+        self.runner.body.velocity = velocity
+
+    def add_to_runner_velocity(self, delta_velocity):
+        """Add a velocity vector to current velocity.
+
+        Args:
+            delta_velocity: Vec2d or tuple representing velocity change
+        """
+        if not isinstance(delta_velocity, Vec2d):
+            delta_velocity = Vec2d(delta_velocity[0], delta_velocity[1])
+
+        current_velocity = Vec2d(
+            self.runner.body.velocity.x, self.runner.body.velocity.y
+        )
+        new_velocity = current_velocity + delta_velocity
+        self.update_runner_velocity(new_velocity)
+
     def check_quit_or_ball_relocation(self):
         """Check if the application should quit.
 
@@ -185,16 +212,20 @@ class Game:
                 self.ball.reset_position(mouse_pos)
         return False
 
-    def handle_input(self):
+    def handle_input(self) -> Vec2d:
         """Calculate new velocity based on input and constraints
 
         Returns:
-            tuple: (x, y) new velocity vector
+            Vec2d: New velocity vector (x, y)
         """
         # Get current state
         keys = pygame.key.get_pressed()
-        current_velocity_x = self.runner.body.velocity.x
-        current_position_x = self.runner.body.position.x
+        current_velocity = Vec2d(
+            self.runner.body.velocity.x, self.runner.body.velocity.y
+        )
+        current_position = Vec2d(
+            self.runner.body.position.x, self.runner.body.position.y
+        )
 
         # Define screen bounds
         margin = self.RUNNER_WIDTH / 2 + 10
@@ -202,50 +233,43 @@ class Game:
         right_bound = self.WIDTH - margin
 
         # Handle bounds checking and return bounced velocity if needed
-        if current_position_x <= left_bound and current_velocity_x < 0:
-            self.runner.body.position = (left_bound, self.runner.body.position.y)
-            return (-current_velocity_x, 0)
-        elif current_position_x >= right_bound and current_velocity_x > 0:
-            self.runner.body.position = (right_bound, self.runner.body.position.y)
-            return (-current_velocity_x, 0)
+        if current_position.x <= left_bound and current_velocity.x < 0:
+            self.runner.body.position = Vec2d(left_bound, self.runner.body.position.y)
+            return Vec2d(-current_velocity.x, 0)
+        elif current_position.x >= right_bound and current_velocity.x > 0:
+            self.runner.body.position = Vec2d(right_bound, self.runner.body.position.y)
+            return Vec2d(-current_velocity.x, 0)
 
         if keys[pygame.K_c]:
             # toggle control
             self.control_active = not self.control_active
 
         # Calculate new velocity based on input
+        dt = SAMPLE_TIME
         if keys[pygame.K_LEFT]:
-            new_velocity = (
-                max(
-                    current_velocity_x - self.RUNNER_SPEED * (1 / 60.0),
-                    -self.RUNNER_MAX_SPEED,
-                ),
-                0,
+            new_x = max(
+                current_velocity.x - self.RUNNER_SPEED * dt, -self.RUNNER_MAX_SPEED
             )
         elif keys[pygame.K_RIGHT]:
-            new_velocity = (
-                min(
-                    current_velocity_x + self.RUNNER_SPEED * (1 / 60.0),
-                    self.RUNNER_MAX_SPEED,
-                ),
-                0,
+            new_x = min(
+                current_velocity.x + self.RUNNER_SPEED * dt, self.RUNNER_MAX_SPEED
             )
         else:
             # Apply deceleration when no input
-            if abs(current_velocity_x) > 1:
-                decel = self.RUNNER_SPEED * (1 / 60.0)
-                if current_velocity_x > 0:
-                    new_velocity = (max(0, current_velocity_x - decel), 0)
+            if abs(current_velocity.x) > 1:
+                decel = self.RUNNER_SPEED * dt
+                if current_velocity.x > 0:
+                    new_x = max(0, current_velocity.x - decel)
                 else:
-                    new_velocity = (min(0, current_velocity_x + decel), 0)
+                    new_x = min(0, current_velocity.x + decel)
             else:
-                new_velocity = (0, 0)
+                new_x = 0
 
-        return new_velocity
+        return Vec2d(new_x, 0)
 
     def update_physics(self):
         # Update physics
-        self.space.step(1 / 60.0)
+        self.space.step(SAMPLE_TIME)
 
     def _calculate_angle_radian(self, runner_position, ball_position):
         # Calculate vector from runner to ball
@@ -374,11 +398,14 @@ class Game:
         pygame.display.flip()
         self.clock.tick(60)
 
-    def controller_input(self, feedback):
+    def controller_input(self, feedback) -> Vec2d:
         """Calculate control input as velocity adjustment
 
+        Args:
+            feedback: Dictionary with system state variables
+
         Returns:
-            tuple: (x, y) velocity adjustment vector
+            Vec2d: Velocity adjustment vector (x, y)
         """
         # Controller gains
         Kangle = 100.0
@@ -395,8 +422,8 @@ class Game:
         max_control = 400  # Maximum velocity adjustment
         control_signal = max(min(control_signal, max_control), -max_control)
 
-        # Return as velocity vector (x, y)
-        return (control_signal, 0)
+        # Return as velocity vector
+        return Vec2d(control_signal, 0)
 
     def run(self):
         running = True
@@ -412,7 +439,7 @@ class Game:
 
             # Get new velocity from input and control
             new_velocity = self.handle_input()
-            self.runner.update_velocity(new_velocity)
+            self.update_runner_velocity(new_velocity)
 
             # Calculate and apply control adjustment
             control_velocity = self.controller_input(self.system_output_data)
@@ -421,7 +448,7 @@ class Game:
                 self.current_control_signal = (
                     control_velocity  # Store for visualization
                 )
-                self.runner.add_to_velocity(control_velocity)
+                self.add_to_runner_velocity(control_velocity)
 
             # Update simulation
             self.update_physics()
@@ -429,7 +456,7 @@ class Game:
             self.system_output_data = (
                 self.calculate_system_output()
             )  # Update simulation time
-            self.simulation_time += 1 / 60.0
+            self.simulation_time += SAMPLE_TIME
 
         pygame.quit()
         sys.exit()
