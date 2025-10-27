@@ -4,6 +4,7 @@ from pymunk import Vec2d
 import pymunk.pygame_util
 import sys
 import math
+from abc import ABC
 
 SAMPLE_TIME = 1 / 60.0
 
@@ -94,58 +95,56 @@ class Crane:
             runner.body, ball.body, (0, runner.height / 2), (0, 0)
         )
         self.joint.collide_bodies = False
-        space.add(self.joint)
+        self.all_objects = [self.runner, self.ball, self.joint]
 
 
-class Game:
+class PlantBase(ABC):
     def __init__(self):
-        # Initialize Pygame and Pymunk
-        pygame.init()
+        self.non_physical_objects: list = []
 
-        # Constants
-        self.WIDTH = 1200
-        self.HEIGHT = 800
-        self.RUNNER_SPEED = 300
-        self.RUNNER_MAX_SPEED = 600
-        self.RUNNER_WIDTH = 100
-        self.RUNNER_HEIGHT = 20
+    def step(self, time_delta):
+        pass
 
-        # Set up display
-        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
-        pygame.display.set_caption("Crane Simulation")
+    def set_input(self, input_data):
+        pass
 
-        # Create physics space
-        self.space = pymunk.Space()
+    def get_output(self):
+        pass
+
+    def draw(self, screen):
+        pass
+
+
+class PlantCrane(PlantBase):
+    def __init__(self, space: pymunk.Space, window_size: tuple):
+        self.space: pymunk.Space = space
+        self.n_inputs: int = 1
+        self.n_outputs: int = 4
         self.space.gravity = (0, 900)
-
-        # Create visual-only objects list (will be populated in setup_objects)
+        self.RUNNER_SPEED: int = 300
+        self.RUNNER_MAX_SPEED: int = 600
+        self.RUNNER_WIDTH: int = 100
+        self.RUNNER_HEIGHT: int = 20
         self.non_physical_objects = []
-        self.control_active = True
+        self.runner, self.ball = self._create_objects(window_size)
+        # # Create connection between runner and ball
+        # self.joint = pymunk.PinJoint(
+        #     self.runner.body, self.ball.body, (0, self.runner.height / 2), (0, 0)
+        # )
 
-        # Create game objects
-        self.setup_objects()
+        self.crane = Crane(self.space, self.runner, self.ball)
+        # for obj in self.crane.all_objects:
+        #     print(self.space.shapes())
+        #     print(self.space.bodies())
+        #     self.space.add(obj.shape, obj.body)
 
-        self.system_output_data = dict()
-        self.system_output_data["angle"] = 0
-        self.system_output_data["angular_velocity"] = 0
-        self.system_output_data["runner_position"] = 0
-        self.system_output_data["runner_velocity"] = 0
-
-        # Clock for frame rate
-        self.clock = pygame.time.Clock()
-
-        # Drawing options
-        self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
-
-        self.recent_outputs = dict()
-
-        self.simulation_time = 0.0
-
-    def setup_objects(self):
+    def _create_objects(self, window_size):
         # Calculate positions
-        bar_left_y = 0.1 * self.HEIGHT
+        window_width = window_size[0]
+        window_height = window_size[1]
+        bar_left_y = 0.1 * window_height
         bar_right_y = bar_left_y
-        bar_right_x = self.WIDTH - 50
+        bar_right_x = window_width - 50
         bar_left_x = 50
         center_pos = ((bar_right_x + bar_left_x) // 2, bar_left_y)
 
@@ -162,8 +161,47 @@ class Game:
         self.runner = Runner(
             self.space, center_pos, self.RUNNER_WIDTH, self.RUNNER_HEIGHT
         )
-        self.ball = Ball(self.space, (self.WIDTH // 2, self.HEIGHT * 0.75))
-        self.crane = Crane(self.space, self.runner, self.ball)
+        self.ball = Ball(self.space, (window_width // 2, window_height * 0.75))
+        # self.crane = Crane(self.space, self.runner, self.ball)
+        return self.runner, self.ball
+
+
+class Game:
+    def __init__(self):
+        # Initialize Pygame and Pymunk
+        pygame.init()
+
+        # Constants
+        self.WIDTH = 1200
+        self.HEIGHT = 800
+
+        # Set up display
+        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        pygame.display.set_caption("Crane Simulation")
+
+        # Create physics space
+        self.space = pymunk.Space()
+        self.plant = PlantCrane(self.space, pygame.display.get_window_size())
+
+        # Create visual-only objects list (will be populated in setup_objects)
+        self.non_physical_objects = []
+        self.control_active = True
+
+        # self.system_output_data = dict()
+        # self.system_output_data["angle"] = 0
+        # self.system_output_data["angular_velocity"] = 0
+        # self.system_output_data["runner_position"] = 0
+        # self.system_output_data["runner_velocity"] = 0
+
+        # Clock for frame rate
+        self.clock = pygame.time.Clock()
+
+        # Drawing options
+        self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
+
+        self.recent_outputs = dict()
+
+        self.simulation_time = 0.0
 
     def update_runner_velocity(self, velocity):
         """Update runner's velocity with limits applied.
