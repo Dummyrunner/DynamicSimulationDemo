@@ -175,13 +175,14 @@ class Game:
         if not isinstance(velocity, Vec2d):
             velocity = Vec2d(velocity[0], velocity[1])
 
-        # Apply speed limit to horizontal movement
-        if abs(velocity.x) > self.RUNNER_MAX_SPEED:
-            velocity.x = (
-                self.RUNNER_MAX_SPEED if velocity.x > 0 else -self.RUNNER_MAX_SPEED
-            )
+        # Create new velocity vector with limits applied
+        new_x = velocity.x
+        if abs(new_x) > self.RUNNER_MAX_SPEED:
+            new_x = self.RUNNER_MAX_SPEED if new_x > 0 else -self.RUNNER_MAX_SPEED
 
-        self.runner.body.velocity = velocity
+        # Create new Vec2d with clamped x and zero y
+        new_velocity = Vec2d(new_x, 0)
+        self.runner.body.velocity = new_velocity
 
     def add_to_runner_velocity(self, delta_velocity):
         """Add a velocity vector to current velocity.
