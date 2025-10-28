@@ -4,7 +4,9 @@ from pymunk import Vec2d
 import pymunk.pygame_util
 import sys
 import math
-from abc import ABC
+from abc import ABC, abstractmethod
+from collections import namedtuple
+from game_controller import CraneControllerPI
 
 SAMPLE_TIME = 1 / 60.0
 
@@ -102,20 +104,33 @@ class PlantBase(ABC):
     def __init__(self):
         self.non_physical_objects: list = []
 
+    @abstractmethod
     def step(self, time_delta):
         pass
 
     def set_input(self, input_data):
         pass
 
+    @abstractmethod
     def get_output(self):
-        pass
-
-    def draw(self, screen):
         pass
 
 
 class PlantCrane(PlantBase):
+    # Define the output type as a class attribute using a nested class
+    class Output(
+        namedtuple("PlantCraneOutput", ["x_velocity", "angle", "angular_velocity"])
+    ):
+        """Output type for the crane plant containing velocity and angle information.
+
+        Attributes:
+            x_velocity: Horizontal velocity of the runner
+            angle: Current angle of the pendulum in radians
+            angular_velocity: Angular velocity of the pendulum in radians per second
+        """
+
+        pass
+
     def __init__(self, space: pymunk.Space, window_size: tuple):
         self.space: pymunk.Space = space
         self.n_inputs: int = 1
@@ -127,81 +142,87 @@ class PlantCrane(PlantBase):
         self.RUNNER_HEIGHT: int = 20
         self.non_physical_objects = []
         self.runner, self.ball = self._create_objects(window_size)
-        # # Create connection between runner and ball
-        # self.joint = pymunk.PinJoint(
-        #     self.runner.body, self.ball.body, (0, self.runner.height / 2), (0, 0)
-        # )
-
         self.crane = Crane(self.space, self.runner, self.ball)
-        # for obj in self.crane.all_objects:
-        #     print(self.space.shapes())
-        #     print(self.space.bodies())
-        #     self.space.add(obj.shape, obj.body)
 
-    def _create_objects(self, window_size):
-        # Calculate positions
-        window_width = window_size[0]
-        window_height = window_size[1]
-        bar_left_y = 0.1 * window_height
-        bar_right_y = bar_left_y
-        bar_right_x = window_width - 50
-        bar_left_x = 50
-        center_pos = ((bar_right_x + bar_left_x) // 2, bar_left_y)
+    def step(self, time_delta):
+        self.space.step(time_delta)
 
-        # Create visual bar
-        bar_line = StaticLine(
-            (bar_left_x, bar_left_y),
-            (bar_right_x, bar_right_y),
-            (100, 100, 100),  # Gray color
-            5,  # thickness
+    def get_output(self) -> "PlantCrane.Output":
+        angle = self._calculate_angle_radian(
+            self.runner.body.position, self.ball.body.position
         )
-        self.non_physical_objects.append(bar_line)
-
-        # Create objects
-        self.runner = Runner(
-            self.space, center_pos, self.RUNNER_WIDTH, self.RUNNER_HEIGHT
+        angular_velocity = self._calculate_angle_velocity_radian_per_sec(
+            self.runner.body.position,
+            self.ball.body.position,
+            self.ball.body.velocity,
         )
-        self.ball = Ball(self.space, (window_width // 2, window_height * 0.75))
-        # self.crane = Crane(self.space, self.runner, self.ball)
-        return self.runner, self.ball
+        x_velocity = self.runner.body.velocity.x
+        return self.Output(
+            x_velocity=x_velocity, angle=angle, angular_velocity=angular_velocity
+        )
 
+    def set_input(self, input_data):
+        self.add_to_runner_velocity((input_data, 0))
 
-class Game:
-    def __init__(self):
-        # Initialize Pygame and Pymunk
-        pygame.init()
+    def draw(self, options):
+        self.space.debug_draw(options)
+        for obj in self.non_physical_objects:
+            obj.draw(options.surface)
 
-        # Constants
-        self.WIDTH = 1200
-        self.HEIGHT = 800
+    def _calculate_new_velocity(self) -> Vec2d:
+        """Calculate new velocity based on input and constraints
 
-        # Set up display
-        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
-        pygame.display.set_caption("Crane Simulation")
+        Returns:
+            Vec2d: New velocity vector (x, y)
+        """
+        # Get current state
+        keys = pygame.key.get_pressed()
+        current_velocity = Vec2d(
+            self.runner.body.velocity.x, self.runner.body.velocity.y
+        )
+        current_position = Vec2d(
+            self.runner.body.position.x, self.runner.body.position.y
+        )
 
-        # Create physics space
-        self.space = pymunk.Space()
-        self.plant = PlantCrane(self.space, pygame.display.get_window_size())
+        # Define screen bounds
+        margin = self.RUNNER_WIDTH / 2 + 10
+        left_bound = margin
+        right_bound = self.WIDTH - margin
 
-        # Create visual-only objects list (will be populated in setup_objects)
-        self.non_physical_objects = []
-        self.control_active = True
+        # Handle bounds checking and return bounced velocity if needed
+        if current_position.x <= left_bound and current_velocity.x < 0:
+            self.runner.body.position = Vec2d(left_bound, self.runner.body.position.y)
+            return Vec2d(-current_velocity.x, 0)
+        elif current_position.x >= right_bound and current_velocity.x > 0:
+            self.runner.body.position = Vec2d(right_bound, self.runner.body.position.y)
+            return Vec2d(-current_velocity.x, 0)
 
-        # self.system_output_data = dict()
-        # self.system_output_data["angle"] = 0
-        # self.system_output_data["angular_velocity"] = 0
-        # self.system_output_data["runner_position"] = 0
-        # self.system_output_data["runner_velocity"] = 0
+        if keys[pygame.K_c]:
+            # toggle control
+            self.control_active = not self.control_active
 
-        # Clock for frame rate
-        self.clock = pygame.time.Clock()
+        # Calculate new velocity based on input
+        dt = SAMPLE_TIME
+        if keys[pygame.K_LEFT]:
+            new_x = max(
+                current_velocity.x - self.RUNNER_SPEED * dt, -self.RUNNER_MAX_SPEED
+            )
+        elif keys[pygame.K_RIGHT]:
+            new_x = min(
+                current_velocity.x + self.RUNNER_SPEED * dt, self.RUNNER_MAX_SPEED
+            )
+        else:
+            # Apply deceleration when no input
+            if abs(current_velocity.x) > 1:
+                decel = self.RUNNER_SPEED * dt
+                if current_velocity.x > 0:
+                    new_x = max(0, current_velocity.x - decel)
+                else:
+                    new_x = min(0, current_velocity.x + decel)
+            else:
+                new_x = 0
 
-        # Drawing options
-        self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
-
-        self.recent_outputs = dict()
-
-        self.simulation_time = 0.0
+        return Vec2d(new_x, 0)
 
     def update_runner_velocity(self, velocity):
         """Update runner's velocity with limits applied.
@@ -214,42 +235,16 @@ class Game:
             velocity = Vec2d(velocity[0], velocity[1])
 
         # Create new velocity vector with limits applied
-        new_x = velocity.x
+        new_x = float(velocity.x)  # Ensure we have a float
         if abs(new_x) > self.RUNNER_MAX_SPEED:
             new_x = self.RUNNER_MAX_SPEED if new_x > 0 else -self.RUNNER_MAX_SPEED
 
-        # Create new Vec2d with clamped x and zero y
-        new_velocity = Vec2d(new_x, 0)
-        self.runner.body.velocity = new_velocity
+        # Get the current velocity vector from the body
+        current_velocity = self.runner.body.velocity
 
-    def add_to_runner_velocity(self, delta_velocity):
-        """Add a velocity vector to current velocity.
-
-        Args:
-            delta_velocity: Vec2d or tuple representing velocity change
-        """
-        if not isinstance(delta_velocity, Vec2d):
-            delta_velocity = Vec2d(delta_velocity[0], delta_velocity[1])
-
-        current_velocity = Vec2d(
-            self.runner.body.velocity.x, self.runner.body.velocity.y
-        )
-        new_velocity = current_velocity + delta_velocity
-        self.update_runner_velocity(new_velocity)
-
-    def check_quit_or_ball_relocation(self):
-        """Check if the application should quit.
-
-        Returns:
-            bool: True if the application should quit, False otherwise
-        """
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                return True
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
-                self.ball.reset_position(mouse_pos)
-        return False
+        # Modify its components directly
+        current_velocity.x = new_x
+        current_velocity.y = 0.0
 
     def handle_input(self) -> Vec2d:
         """Calculate new velocity based on input and constraints
@@ -306,9 +301,47 @@ class Game:
 
         return Vec2d(new_x, 0)
 
-    def update_physics(self):
-        # Update physics
-        self.space.step(SAMPLE_TIME)
+    def _create_objects(self, window_size):
+        # Calculate positions
+        window_width = window_size[0]
+        window_height = window_size[1]
+        bar_left_y = 0.1 * window_height
+        bar_right_y = bar_left_y
+        bar_right_x = window_width - 50
+        bar_left_x = 50
+        center_pos = ((bar_right_x + bar_left_x) // 2, bar_left_y)
+
+        # Create visual bar
+        bar_line = StaticLine(
+            (bar_left_x, bar_left_y),
+            (bar_right_x, bar_right_y),
+            (100, 100, 100),  # Gray color
+            5,  # thickness
+        )
+        self.non_physical_objects.append(bar_line)
+
+        # Create objects
+        self.runner = Runner(
+            self.space, center_pos, self.RUNNER_WIDTH, self.RUNNER_HEIGHT
+        )
+        self.ball = Ball(self.space, (window_width // 2, window_height * 0.75))
+        # self.crane = Crane(self.space, self.runner, self.ball)
+        return self.runner, self.ball
+
+    def add_to_runner_velocity(self, delta_velocity):
+        """Add a velocity vector to current velocity.
+
+        Args:
+            delta_velocity: Vec2d or tuple representing velocity change
+        """
+        if not isinstance(delta_velocity, Vec2d):
+            delta_velocity = Vec2d(delta_velocity[0], delta_velocity[1])
+
+        current_velocity = Vec2d(
+            self.runner.body.velocity.x, self.runner.body.velocity.y
+        )
+        new_velocity = Vec2d(current_velocity + delta_velocity, 0)
+        self.update_runner_velocity(new_velocity)
 
     def _calculate_angle_radian(self, runner_position, ball_position):
         # Calculate vector from runner to ball
@@ -352,22 +385,51 @@ class Game:
 
         return angular_velocity
 
-    def calculate_system_output(self):
-        """Return system output data in vector form."""
-        system_output = dict()
-        system_output["angle"] = self._calculate_angle_radian(
-            self.runner.body.position, self.ball.body.position
+
+class Game:
+    def __init__(self):
+        # Initialize Pygame and Pymunk
+        pygame.init()
+
+        # Constants
+        self.WIDTH = 1200
+        self.HEIGHT = 800
+        self.reference_signal = 0.0
+        # Set up display
+        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        pygame.display.set_caption("Crane Simulation")
+
+        # Create physics space
+        self.space = pymunk.Space()
+        self.plant = PlantCrane(self.space, pygame.display.get_window_size())
+        INITIAL_KP = 500.0
+        INITIAL_KI = 50.0
+        self.controller = CraneControllerPI(
+            kp=INITIAL_KP, ki=INITIAL_KI, sample_time=SAMPLE_TIME
         )
-        system_output["angular_velocity"] = (
-            self._calculate_angle_velocity_radian_per_sec(
-                self.runner.body.position,
-                self.ball.body.position,
-                self.ball.body.velocity,
-            )
-        )
-        system_output["runner_position"] = self.runner.body.position.x
-        system_output["runner_velocity"] = self.runner.body.velocity.x
-        return system_output
+        # Create visual-only objects list (will be populated in setup_objects)
+        self.non_physical_objects = []
+        self.control_active = True
+        # Clock for frame rate
+        self.clock = pygame.time.Clock()
+        # Drawing options
+        self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
+        self.recent_outputs = dict()
+        self.simulation_time = 0.0
+
+    def check_quit_or_ball_relocation(self):
+        """Check if the application should quit.
+
+        Returns:
+            bool: True if the application should quit, False otherwise
+        """
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return True
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                self.ball.reset_position(mouse_pos)
+        return False
 
     def draw_control_arrow(self, control_signal):
         """Draw an arrow representing the control signal direction and magnitude."""
@@ -423,7 +485,7 @@ class Game:
         self.screen.fill((255, 255, 255))
 
         # Draw all objects using debug draw
-        self.space.debug_draw(self.draw_options)
+        self.plant.debug_draw(self.draw_options)
 
         # Draw all visual-only objects
         for visual_obj in self.non_physical_objects:
@@ -437,64 +499,28 @@ class Game:
         pygame.display.flip()
         self.clock.tick(60)
 
-    def controller_input(self, feedback) -> Vec2d:
-        """Calculate control input as velocity adjustment
-
-        Args:
-            feedback: Dictionary with system state variables
-
-        Returns:
-            Vec2d: Velocity adjustment vector (x, y)
-        """
-        # Controller gains
-        Kangle = 100.0
-        Krunnervelocity = -5.0
-
-        angle = feedback["angle"]
-        angular_velocity = feedback["angular_velocity"]
-
-        # Calculate horizontal velocity adjustment
-        # Negative gains because positive angle needs negative correction
-        control_signal = -Kangle * angle - Krunnervelocity * angular_velocity
-
-        # Limit maximum control signal to prevent too aggressive movement
-        max_control = 400  # Maximum velocity adjustment
-        control_signal = max(min(control_signal, max_control), -max_control)
-
-        # Return as velocity vector
-        return Vec2d(control_signal, 0)
-
     def run(self):
         running = True
-
-        # Initialize system output data
-        self.system_output_data = self.calculate_system_output()
-
         while running:
             # Check for quit event
             if self.check_quit_or_ball_relocation():
                 running = False
                 continue
 
-            # Get new velocity from input and control
-            new_velocity = self.handle_input()
-            self.update_runner_velocity(new_velocity)
-
-            # Calculate and apply control adjustment
-            control_velocity = self.controller_input(self.system_output_data)
-
-            if self.control_active:
-                self.current_control_signal = (
-                    control_velocity  # Store for visualization
-                )
-                self.add_to_runner_velocity(control_velocity)
+            EXAMPLE_INPUT = 0.0
+            # Feed input into plant
+            self.plant.set_input(self.controller.controller_input(EXAMPLE_INPUT))
+            self.plant.step(SAMPLE_TIME)
+            # Get current plant output
+            plant_output = self.plant.get_output()
+            control_error = self.reference_signal - plant_output.angle
+            # Get control input from controller
+            control_signal = self.controller.controller_input(control_error)
+            self.plant.set_input(control_signal)
 
             # Update simulation
-            self.update_physics()
+            self.plant.step(SAMPLE_TIME)
             self.update_ui()
-            self.system_output_data = (
-                self.calculate_system_output()
-            )  # Update simulation time
             self.simulation_time += SAMPLE_TIME
 
         pygame.quit()
