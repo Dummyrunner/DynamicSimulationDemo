@@ -86,18 +86,18 @@ class Ball(GameObject):
         self.body.velocity = (0, 0)
 
 
-class Crane:
-    def __init__(self, space, runner, ball):
-        self.space = space
-        self.runner = runner
-        self.ball = ball
+# class Crane:
+#     def __init__(self, space, runner, ball):
+#         self.space = space
+#         self.runner = runner
+#         self.ball = ball
 
-        # Create connection between runner and ball
-        self.joint = pymunk.PinJoint(
-            runner.body, ball.body, (0, runner.height / 2), (0, 0)
-        )
-        self.joint.collide_bodies = False
-        self.all_objects = [self.runner, self.ball, self.joint]
+#         # Create connection between runner and ball
+#         self.joint = pymunk.PinJoint(
+#             runner.body, ball.body, (0, runner.height / 2), (0, 0)
+#         )
+#         self.joint.collide_bodies = False
+#         self.all_objects = [self.runner, self.ball, self.joint]
 
 
 class PlantBase(ABC):
@@ -142,7 +142,6 @@ class PlantCrane(PlantBase):
         self.RUNNER_HEIGHT: int = 20
         self.non_physical_objects = []
         self.runner, self.ball = self._create_objects(window_size)
-        self.crane = Crane(self.space, self.runner, self.ball)
 
     def step(self, time_delta):
         self.space.step(time_delta)
@@ -162,7 +161,7 @@ class PlantCrane(PlantBase):
         )
 
     def set_input(self, input_data):
-        self.add_to_runner_velocity((input_data, 0))
+        self.add_to_runner_velocity(Vec2d(input_data, 0))
 
     def draw(self, options):
         self.space.debug_draw(options)
@@ -235,16 +234,11 @@ class PlantCrane(PlantBase):
             velocity = Vec2d(velocity[0], velocity[1])
 
         # Create new velocity vector with limits applied
-        new_x = float(velocity.x)  # Ensure we have a float
+        new_x = velocity.x
         if abs(new_x) > self.RUNNER_MAX_SPEED:
             new_x = self.RUNNER_MAX_SPEED if new_x > 0 else -self.RUNNER_MAX_SPEED
-
         # Get the current velocity vector from the body
-        current_velocity = self.runner.body.velocity
-
-        # Modify its components directly
-        current_velocity.x = new_x
-        current_velocity.y = 0.0
+        self.runner.body.velocity = (new_x, 0)
 
     def handle_input(self) -> Vec2d:
         """Calculate new velocity based on input and constraints
@@ -328,7 +322,7 @@ class PlantCrane(PlantBase):
         # self.crane = Crane(self.space, self.runner, self.ball)
         return self.runner, self.ball
 
-    def add_to_runner_velocity(self, delta_velocity):
+    def add_to_runner_velocity(self, delta_velocity: Vec2d):
         """Add a velocity vector to current velocity.
 
         Args:
@@ -340,7 +334,7 @@ class PlantCrane(PlantBase):
         current_velocity = Vec2d(
             self.runner.body.velocity.x, self.runner.body.velocity.y
         )
-        new_velocity = Vec2d(current_velocity + delta_velocity, 0)
+        new_velocity = current_velocity + delta_velocity
         self.update_runner_velocity(new_velocity)
 
     def _calculate_angle_radian(self, runner_position, ball_position):
@@ -485,7 +479,7 @@ class Game:
         self.screen.fill((255, 255, 255))
 
         # Draw all objects using debug draw
-        self.plant.debug_draw(self.draw_options)
+        self.plant.space.debug_draw(self.draw_options)
 
         # Draw all visual-only objects
         for visual_obj in self.non_physical_objects:
