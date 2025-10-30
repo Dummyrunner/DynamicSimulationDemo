@@ -44,6 +44,7 @@ class Runner(GameObject):
         super().__init__(space)
         self.width = width
         self.height = height
+        self.color = (0, 255, 0)  # Green color
 
         # Create kinematic body
         self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
@@ -61,14 +62,23 @@ class Runner(GameObject):
             transform=pymunk.Transform(tx=-0.5 * width, ty=-0.5 * height),
             radius=1,
         )
-        self.shape.color = (0, 255, 0, 255)
         space.add(self.body, self.shape)
+
+    def draw(self, surface):
+        """Draw the runner using pygame directly."""
+        # Calculate the rectangle position (top-left corner)
+        pos_x = self.body.position.x - self.width / 2
+        pos_y = self.body.position.y - self.height / 2
+
+        # Draw the rectangle
+        pygame.draw.rect(surface, self.color, (pos_x, pos_y, self.width, self.height))
 
 
 class Ball(GameObject):
     def __init__(self, space, position, mass=90, radius=15):
         super().__init__(space)
         self.radius = radius
+        self.color = (255, 0, 0)
 
         # Create dynamic body
         moment = pymunk.moment_for_circle(mass, 0, radius)
@@ -85,24 +95,23 @@ class Ball(GameObject):
         self.body.position = position
         self.body.velocity = (0, 0)
 
-
-# class Crane:
-#     def __init__(self, space, runner, ball):
-#         self.space = space
-#         self.runner = runner
-#         self.ball = ball
-
-#         # Create connection between runner and ball
-#         self.joint = pymunk.PinJoint(
-#             runner.body, ball.body, (0, runner.height / 2), (0, 0)
-#         )
-#         self.joint.collide_bodies = False
-#         self.all_objects = [self.runner, self.ball, self.joint]
+    def draw(self, surface):
+        """Draw the ball using pygame directly."""
+        # Draw the circle
+        pygame.draw.circle(
+            surface,
+            self.color,
+            (int(self.body.position.x), int(self.body.position.y)),
+            self.radius,
+        )
 
 
 class PlantBase(ABC):
     def __init__(self):
         self.non_physical_objects: list = []
+        self.all_physical_objects: list = []
+        self.n_inputs: int = 0
+        self.n_outputs: int = 0
 
     @abstractmethod
     def step(self, time_delta):
@@ -164,9 +173,16 @@ class PlantCrane(PlantBase):
         self.add_to_runner_velocity(Vec2d(input_data, 0))
 
     def draw(self, options):
-        self.space.debug_draw(options)
+        # Draw non-physical objects first (background elements)
         for obj in self.non_physical_objects:
             obj.draw(options.surface)
+
+            # Draw the pin joint connection
+            self.pin_joint.draw(options.surface)
+
+        # Draw game objects with their custom draw methods
+        self.runner.draw(options.surface)
+        self.ball.draw(options.surface)
 
     def _calculate_new_velocity(self) -> Vec2d:
         """Calculate new velocity based on input and constraints
@@ -319,7 +335,20 @@ class PlantCrane(PlantBase):
             self.space, center_pos, self.RUNNER_WIDTH, self.RUNNER_HEIGHT
         )
         self.ball = Ball(self.space, (window_width // 2, window_height * 0.75))
-        # self.crane = Crane(self.space, self.runner, self.ball)
+
+        # Create pin joint between runner and ball
+        # Bottom center of runner to center of ball
+        runner_anchor = (0, self.RUNNER_HEIGHT / 2)  # Relative to runner's center
+        ball_anchor = (0, 0)  # Center of the ball
+
+        self.joint = pymunk.PinJoint(
+            self.runner.body, self.ball.body, runner_anchor, ball_anchor
+        )
+        self.joint.collide_bodies = False  # Prevent collision between connected bodies
+        self.space.add(self.joint)
+
+        self.all_physical_objects = [self.runner, self.ball]
+
         return self.runner, self.ball
 
     def add_to_runner_velocity(self, delta_velocity: Vec2d):
@@ -479,10 +508,12 @@ class Game:
         self.screen.fill((255, 255, 255))
 
         # Draw all objects using debug draw
-        self.plant.space.debug_draw(self.draw_options)
+        # self.plant.space.debug_draw(self.draw_options)
+        for obj in self.plant.all_physical_objects:
+            obj.draw(self.screen)
 
         # Draw all visual-only objects
-        for visual_obj in self.non_physical_objects:
+        for visual_obj in self.plant.non_physical_objects:
             visual_obj.draw(self.screen)
 
         # Draw control signal visualization if we have current control signal
