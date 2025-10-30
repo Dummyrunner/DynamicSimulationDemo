@@ -7,6 +7,7 @@ import math
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from game_controller import CraneControllerPI
+from physical_objects import PinJointConnection, Ball, Runner
 
 SAMPLE_TIME = 1 / 60.0
 
@@ -32,128 +33,6 @@ class StaticLine(VisualObject):
         )
 
 
-class GameObject:
-    def __init__(self, space):
-        self.space = space
-        self.body = None
-        self.shape = None
-
-
-class Runner(GameObject):
-    def __init__(self, space, position, width=100, height=20):
-        super().__init__(space)
-        self.width = width
-        self.height = height
-        self.color = (0, 255, 0)  # Green color
-
-        # Create kinematic body
-        self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
-        self.body.position = position
-
-        # Create rectangular shape
-        self.shape = pymunk.Poly(
-            self.body,
-            vertices=[
-                (0, 0),
-                (0, height),
-                (width, height),
-                (width, 0),
-            ],
-            transform=pymunk.Transform(tx=-0.5 * width, ty=-0.5 * height),
-            radius=1,
-        )
-        space.add(self.body, self.shape)
-
-    def draw(self, surface):
-        """Draw the runner using pygame directly."""
-        # Calculate the rectangle position (top-left corner)
-        pos_x = self.body.position.x - self.width / 2
-        pos_y = self.body.position.y - self.height / 2
-
-        # Draw the rectangle
-        pygame.draw.rect(surface, self.color, (pos_x, pos_y, self.width, self.height))
-
-
-class Ball(GameObject):
-    def __init__(self, space, position, mass=90, radius=15):
-        super().__init__(space)
-        self.radius = radius
-        self.color = (255, 0, 0)
-
-        # Create dynamic body
-        moment = pymunk.moment_for_circle(mass, 0, radius)
-        self.body = pymunk.Body(mass, moment)
-        self.body.position = position
-
-        # Create circle shape
-        self.shape = pymunk.Circle(self.body, radius)
-        self.shape.elasticity = 0.95
-        self.shape.friction = 0.9
-        space.add(self.body, self.shape)
-
-    def reset_position(self, position):
-        self.body.position = position
-        self.body.velocity = (0, 0)
-
-    def draw(self, surface):
-        """Draw the ball using pygame directly."""
-        # Draw the circle
-        pygame.draw.circle(
-            surface,
-            self.color,
-            (int(self.body.position.x), int(self.body.position.y)),
-            self.radius,
-        )
-
-
-class PinJointConnection:
-    """Encapsulates a pymunk.PinJoint and provides a draw method.
-
-    The anchor points are specified in the local coordinates of each body.
-    """
-
-    def __init__(
-        self,
-        space: pymunk.Space,
-        body_a: pymunk.Body,
-        body_b: pymunk.Body,
-        anchor_a,
-        anchor_b,
-        color=(100, 100, 100),
-    ):
-        self.space = space
-        self.body_a = body_a
-        self.body_b = body_b
-        self.anchor_a = anchor_a
-        self.anchor_b = anchor_b
-        self.color = color
-
-        # create the physical joint and add to space
-        self.joint = pymunk.PinJoint(self.body_a, self.body_b, anchor_a, anchor_b)
-        self.joint.collide_bodies = False
-        self.space.add(self.joint)
-
-    def draw(self, surface):
-        # get world coordinates for each anchor
-        try:
-            pos_a = self.body_a.local_to_world(self.anchor_a)
-        except Exception:
-            # fall back to body position
-            pos_a = self.body_a.position
-        try:
-            pos_b = self.body_b.local_to_world(self.anchor_b)
-        except Exception:
-            pos_b = self.body_b.position
-
-        # draw connecting line
-        pygame.draw.line(surface, self.color, (pos_a.x, pos_a.y), (pos_b.x, pos_b.y), 2)
-
-        # draw small anchor dots
-        r = 3
-        pygame.draw.circle(surface, self.color, (int(pos_a.x), int(pos_a.y)), r)
-        pygame.draw.circle(surface, self.color, (int(pos_b.x), int(pos_b.y)), r)
-
-
 class PlantBase(ABC):
     def __init__(self):
         self.non_physical_objects: list = []
@@ -174,7 +53,16 @@ class PlantBase(ABC):
 
 
 class PlantCrane(PlantBase):
-    # Define the output type as a class attribute using a nested class
+    # Define input/output types as class attributes using nested classes
+    class Input(namedtuple("PlantCraneInput", ["x_velocity"])):
+        """Input type for the crane plant containing control signals.
+
+        Attributes:
+            x_velocity: Target horizontal velocity for the runner (scalar value in units/second)
+        """
+
+        pass
+
     class Output(
         namedtuple("PlantCraneOutput", ["x_velocity", "angle", "angular_velocity"])
     ):
@@ -218,7 +106,7 @@ class PlantCrane(PlantBase):
         )
 
     def set_input(self, input_data):
-        self.add_to_runner_velocity(Vec2d(input_data, 0))
+        self.update_runner_velocity(Vec2d(input_data, 0))
 
     def draw(self, options):
         # Draw non-physical objects first (background elements)
@@ -288,7 +176,7 @@ class PlantCrane(PlantBase):
 
         return Vec2d(new_x, 0)
 
-    def update_runner_velocity(self, velocity):
+    def update_runner_velocity(self, velocity: Vec2d):
         """Update runner's velocity with limits applied.
 
         Args:
@@ -296,16 +184,16 @@ class PlantCrane(PlantBase):
         """
         # Convert input to Vec2d if it isn't already
         if not isinstance(velocity, Vec2d):
-            velocity = Vec2d(velocity[0], velocity[1])
+            raise TypeError("velocity must be a Vec2d instance")
 
         # Create new velocity vector with limits applied
         new_x = velocity.x
         if abs(new_x) > self.RUNNER_MAX_SPEED:
             new_x = self.RUNNER_MAX_SPEED if new_x > 0 else -self.RUNNER_MAX_SPEED
         # Get the current velocity vector from the body
-        self.runner.body.velocity = (new_x, 0)
+        self.runner.body.velocity = (float(new_x), 0.0)
 
-    def handle_input(self) -> Vec2d:
+    def velocity_delta_from_key(self) -> Vec2d:
         """Calculate new velocity based on input and constraints
 
         Returns:
@@ -323,7 +211,7 @@ class PlantCrane(PlantBase):
         # Define screen bounds
         margin = self.RUNNER_WIDTH / 2 + 10
         left_bound = margin
-        right_bound = self.WIDTH - margin
+        right_bound = self.RUNNER_WIDTH - margin
 
         # Handle bounds checking and return bounced velocity if needed
         if current_position.x <= left_bound and current_velocity.x < 0:
@@ -357,7 +245,6 @@ class PlantCrane(PlantBase):
                     new_x = min(0, current_velocity.x + decel)
             else:
                 new_x = 0
-
         return Vec2d(new_x, 0)
 
     def _create_objects(self, window_size):
@@ -394,21 +281,6 @@ class PlantCrane(PlantBase):
 
         # Keep physical objects (include connection for drawing)
         self.all_physical_objects = [self.runner, self.ball, self.pin_joint]
-
-    def add_to_runner_velocity(self, delta_velocity: Vec2d):
-        """Add a velocity vector to current velocity.
-
-        Args:
-            delta_velocity: Vec2d or tuple representing velocity change
-        """
-        if not isinstance(delta_velocity, Vec2d):
-            delta_velocity = Vec2d(delta_velocity[0], delta_velocity[1])
-
-        current_velocity = Vec2d(
-            self.runner.body.velocity.x, self.runner.body.velocity.y
-        )
-        new_velocity = current_velocity + delta_velocity
-        self.update_runner_velocity(new_velocity)
 
     def _calculate_angle_radian(self, runner_position, ball_position):
         # Calculate vector from runner to ball
@@ -495,64 +367,14 @@ class Game:
                 return True
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
-                self.ball.reset_position(mouse_pos)
+                self.plant.ball.reset_position(mouse_pos)
         return False
-
-    def draw_control_arrow(self, control_signal):
-        """Draw an arrow representing the control signal direction and magnitude."""
-        if control_signal == (0, 0):
-            return
-
-        # Get runner's center position
-        runner_pos = self.runner.body.position
-
-        # Scale factor to make arrow visible (adjust this value to change arrow length)
-        scale = 5  # Increased scale to make arrow more visible
-
-        # Calculate arrow end point
-        arrow_end = (
-            runner_pos.x + control_signal[0] * scale,
-            runner_pos.y + control_signal[1] * scale,
-        )
-
-        # Draw main line of arrow
-        pygame.draw.line(
-            self.screen,
-            (255, 0, 0),  # Red color
-            (runner_pos.x, runner_pos.y),
-            arrow_end,
-            2,  # Line thickness
-        )
-
-        # Calculate and draw arrow head
-        if control_signal[0] != 0:  # Only if we have horizontal movement
-            # Arrow head size
-            head_size = 10
-            angle = math.pi / 6  # 30 degrees for arrow head
-
-            # Direction of the arrow
-            direction = 1 if control_signal[0] > 0 else -1
-
-            # Calculate arrow head points
-            head_point1 = (
-                arrow_end[0] - direction * head_size * math.cos(angle),
-                arrow_end[1] - head_size * math.sin(angle),
-            )
-            head_point2 = (
-                arrow_end[0] - direction * head_size * math.cos(angle),
-                arrow_end[1] + head_size * math.sin(angle),
-            )
-
-            # Draw arrow head
-            pygame.draw.line(self.screen, (255, 0, 0), arrow_end, head_point1, 2)
-            pygame.draw.line(self.screen, (255, 0, 0), arrow_end, head_point2, 2)
 
     def update_ui(self):
         # Clear screen
         self.screen.fill((255, 255, 255))
 
         # Draw all objects using debug draw
-        # self.plant.space.debug_draw(self.draw_options)
         for obj in self.plant.all_physical_objects:
             obj.draw(self.screen)
 
@@ -568,7 +390,7 @@ class Game:
         pygame.display.flip()
         self.clock.tick(60)
 
-    def run(self):
+    def main_loop(self):
         running = True
         while running:
             # Check for quit event
@@ -577,12 +399,15 @@ class Game:
                 continue
 
             self.plant.step(SAMPLE_TIME)
+
             # Get current plant output
             plant_output = self.plant.get_output()
             control_error = self.reference_signal - plant_output.angle
+            # Get Key related velocity change
+            velocity_delta_from_key_input = self.plant.velocity_delta_from_key()
             # Get control input from controller
             control_signal = self.controller.get_control_input(control_error)
-            self.plant.set_input(control_signal)
+            self.plant.set_input((control_signal, 0) + velocity_delta_from_key_input)
 
             # Update simulation
             self.plant.step(SAMPLE_TIME)
@@ -595,4 +420,4 @@ class Game:
 
 if __name__ == "__main__":
     game = Game()
-    game.run()
+    game.main_loop()
