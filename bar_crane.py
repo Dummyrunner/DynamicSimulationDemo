@@ -106,6 +106,54 @@ class Ball(GameObject):
         )
 
 
+class PinJointConnection:
+    """Encapsulates a pymunk.PinJoint and provides a draw method.
+
+    The anchor points are specified in the local coordinates of each body.
+    """
+
+    def __init__(
+        self,
+        space: pymunk.Space,
+        body_a: pymunk.Body,
+        body_b: pymunk.Body,
+        anchor_a,
+        anchor_b,
+        color=(100, 100, 100),
+    ):
+        self.space = space
+        self.body_a = body_a
+        self.body_b = body_b
+        self.anchor_a = anchor_a
+        self.anchor_b = anchor_b
+        self.color = color
+
+        # create the physical joint and add to space
+        self.joint = pymunk.PinJoint(self.body_a, self.body_b, anchor_a, anchor_b)
+        self.joint.collide_bodies = False
+        self.space.add(self.joint)
+
+    def draw(self, surface):
+        # get world coordinates for each anchor
+        try:
+            pos_a = self.body_a.local_to_world(self.anchor_a)
+        except Exception:
+            # fall back to body position
+            pos_a = self.body_a.position
+        try:
+            pos_b = self.body_b.local_to_world(self.anchor_b)
+        except Exception:
+            pos_b = self.body_b.position
+
+        # draw connecting line
+        pygame.draw.line(surface, self.color, (pos_a.x, pos_a.y), (pos_b.x, pos_b.y), 2)
+
+        # draw small anchor dots
+        r = 3
+        pygame.draw.circle(surface, self.color, (int(pos_a.x), int(pos_a.y)), r)
+        pygame.draw.circle(surface, self.color, (int(pos_b.x), int(pos_b.y)), r)
+
+
 class PlantBase(ABC):
     def __init__(self):
         self.non_physical_objects: list = []
@@ -150,7 +198,7 @@ class PlantCrane(PlantBase):
         self.RUNNER_WIDTH: int = 100
         self.RUNNER_HEIGHT: int = 20
         self.non_physical_objects = []
-        self.runner, self.ball = self._create_objects(window_size)
+        self._create_objects(window_size)
 
     def step(self, time_delta):
         self.space.step(time_delta)
@@ -177,7 +225,8 @@ class PlantCrane(PlantBase):
         for obj in self.non_physical_objects:
             obj.draw(options.surface)
 
-            # Draw the pin joint connection
+        # Draw the pin joint connection (if present)
+        if hasattr(self, "pin_joint") and self.pin_joint is not None:
             self.pin_joint.draw(options.surface)
 
         # Draw game objects with their custom draw methods
@@ -336,20 +385,15 @@ class PlantCrane(PlantBase):
         )
         self.ball = Ball(self.space, (window_width // 2, window_height * 0.75))
 
-        # Create pin joint between runner and ball
-        # Bottom center of runner to center of ball
+        # Create pin joint connection (bottom center of runner to center of ball)
         runner_anchor = (0, self.RUNNER_HEIGHT / 2)  # Relative to runner's center
         ball_anchor = (0, 0)  # Center of the ball
-
-        self.joint = pymunk.PinJoint(
-            self.runner.body, self.ball.body, runner_anchor, ball_anchor
+        self.pin_joint = PinJointConnection(
+            self.space, self.runner.body, self.ball.body, runner_anchor, ball_anchor
         )
-        self.joint.collide_bodies = False  # Prevent collision between connected bodies
-        self.space.add(self.joint)
 
-        self.all_physical_objects = [self.runner, self.ball]
-
-        return self.runner, self.ball
+        # Keep physical objects (include connection for drawing)
+        self.all_physical_objects = [self.runner, self.ball, self.pin_joint]
 
     def add_to_runner_velocity(self, delta_velocity: Vec2d):
         """Add a velocity vector to current velocity.
@@ -532,15 +576,12 @@ class Game:
                 running = False
                 continue
 
-            EXAMPLE_INPUT = 0.0
-            # Feed input into plant
-            self.plant.set_input(self.controller.controller_input(EXAMPLE_INPUT))
             self.plant.step(SAMPLE_TIME)
             # Get current plant output
             plant_output = self.plant.get_output()
             control_error = self.reference_signal - plant_output.angle
             # Get control input from controller
-            control_signal = self.controller.controller_input(control_error)
+            control_signal = self.controller.get_control_input(control_error)
             self.plant.set_input(control_signal)
 
             # Update simulation

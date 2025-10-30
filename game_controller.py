@@ -6,7 +6,7 @@ class GameControllerBase(ABC):
         pass
 
     @abstractmethod
-    def controller_input(self, plant):
+    def get_control_input(self, plant):
         # Process system output and return control input
         pass
 
@@ -44,7 +44,7 @@ class CraneControllerPI(GameControllerBase):
             raise TypeError("ki must be a number")
         self._ki = float(value)
 
-    def controller_input(self, control_error):
+    def get_control_input(self, control_error):
         self.integral += control_error * self.sample_time
         control_signal = self.kp * control_error + self.ki * self.integral
         return control_signal
