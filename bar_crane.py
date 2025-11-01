@@ -77,6 +77,15 @@ class PlantCrane(PlantBase):
 
         pass
 
+    class Input(namedtuple("PlantCraneInput", ["x_velocity"])):
+        """Input type for the crane plant containing control signals.
+
+        Attributes:
+            x_velocity: Target horizontal velocity for the runner (scalar value in units/second)
+        """
+
+        pass
+
     def __init__(self, space: pymunk.Space, window_size: tuple):
         self.space: pymunk.Space = space
         self.n_inputs: int = 1
@@ -344,15 +353,16 @@ class Game:
             # Bound velocity change to not exceed max speed and bar limits
 
             velocity_delta_from_control = (
-                Vec2d(0, 0)
-                if not self.control_active
-                else Vec2d(self.controller.get_control_input(control_error), 0)
+                Vec2d(self.controller.get_control_input(control_error), 0)
+                if self.control_active
+                else Vec2d(0, 0)
             )
             if self.control_active:
                 self.controller.visualize_control_input(
                     self.screen, velocity_delta_from_control.x
                 )
             current_velocity = self.plant.runner.body.velocity
+
             self.plant.update_runner_velocity(
                 current_velocity
                 + velocity_delta_from_control
