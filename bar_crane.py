@@ -87,6 +87,7 @@ class PlantCrane(PlantBase):
         self.RUNNER_WIDTH: int = 100
         self.RUNNER_HEIGHT: int = 20
         self.non_physical_objects = []
+        self.control_active = True
         self._create_objects(window_size)
 
     def step(self, time_delta):
@@ -166,9 +167,6 @@ class PlantCrane(PlantBase):
         # Get current state
         keys = pygame.key.get_pressed()
         dt = SAMPLE_TIME
-        if keys[pygame.K_c]:
-            # toggle control
-            self.control_active = not self.control_active
 
         # Calculate new velocity based on input
         if keys[pygame.K_LEFT]:
@@ -323,11 +321,18 @@ class Game:
 
     def main_loop(self):
         running = True
+        frames_since_toggle_counter = 0
         while running:
+            frames_since_toggle_counter += 1
             # Check for quit event
             if self.check_quit_or_ball_relocation():
                 running = False
                 continue
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_c] and frames_since_toggle_counter > 10:
+                # toggle control
+                self.control_active = not self.control_active
+                frames_since_toggle_counter = 0
 
             self.plant.step(SAMPLE_TIME)
 
@@ -338,7 +343,15 @@ class Game:
             velocity_delta_from_key_input = self.plant.velocity_delta_from_key_input()
             # Bound velocity change to not exceed max speed and bar limits
 
-            velocity_delta_from_control = Vec2d(0.0, 0.0)
+            velocity_delta_from_control = (
+                Vec2d(0, 0)
+                if not self.control_active
+                else Vec2d(self.controller.get_control_input(control_error), 0)
+            )
+            if self.control_active:
+                self.controller.visualize_control_input(
+                    self.screen, velocity_delta_from_control.x
+                )
             current_velocity = self.plant.runner.body.velocity
             self.plant.update_runner_velocity(
                 current_velocity
