@@ -55,7 +55,7 @@ class CraneControllerPI(GameControllerBase):
 
     def visualize_control_input(self, display, control_input):
         # Visualization code for PID control input
-        print(f"PID Control Input: {control_input}")
+        print(f"PI Control Input: {control_input}, Integral: {self.integral}")
 
 
 # def draw_control_arrow(self, control_signal):
