@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 from game_controller import CraneControllerPI
 from physical_objects import PinJointConnection, Ball, Runner
+from math_helpers import clamp
 
 SAMPLE_TIME = 1 / 60.0
 
@@ -121,61 +122,6 @@ class PlantCrane(PlantBase):
         self.runner.draw(options.surface)
         self.ball.draw(options.surface)
 
-    def _calculate_new_velocity(self) -> Vec2d:
-        """Calculate new velocity based on input and constraints
-
-        Returns:
-            Vec2d: New velocity vector (x, y)
-        """
-        # Get current state
-        keys = pygame.key.get_pressed()
-        current_velocity = Vec2d(
-            self.runner.body.velocity.x, self.runner.body.velocity.y
-        )
-        current_position = Vec2d(
-            self.runner.body.position.x, self.runner.body.position.y
-        )
-
-        # Define screen bounds
-        margin = self.RUNNER_WIDTH / 2 + 10
-        left_bound = margin
-        right_bound = self.WIDTH - margin
-
-        # Handle bounds checking and return bounced velocity if needed
-        if current_position.x <= left_bound and current_velocity.x < 0:
-            self.runner.body.position = Vec2d(left_bound, self.runner.body.position.y)
-            return Vec2d(-current_velocity.x, 0)
-        elif current_position.x >= right_bound and current_velocity.x > 0:
-            self.runner.body.position = Vec2d(right_bound, self.runner.body.position.y)
-            return Vec2d(-current_velocity.x, 0)
-
-        if keys[pygame.K_c]:
-            # toggle control
-            self.control_active = not self.control_active
-
-        # Calculate new velocity based on input
-        dt = SAMPLE_TIME
-        if keys[pygame.K_LEFT]:
-            new_x = max(
-                current_velocity.x - self.RUNNER_SPEED * dt, -self.RUNNER_MAX_SPEED
-            )
-        elif keys[pygame.K_RIGHT]:
-            new_x = min(
-                current_velocity.x + self.RUNNER_SPEED * dt, self.RUNNER_MAX_SPEED
-            )
-        else:
-            # Apply deceleration when no input
-            if abs(current_velocity.x) > 1:
-                decel = self.RUNNER_SPEED * dt
-                if current_velocity.x > 0:
-                    new_x = max(0, current_velocity.x - decel)
-                else:
-                    new_x = min(0, current_velocity.x + decel)
-            else:
-                new_x = 0
-
-        return Vec2d(new_x, 0)
-
     def update_runner_velocity(self, velocity: Vec2d):
         """Update runner's velocity with limits applied.
 
@@ -193,7 +139,7 @@ class PlantCrane(PlantBase):
         # Get the current velocity vector from the body
         self.runner.body.velocity = (float(new_x), 0.0)
 
-    def velocity_delta_from_key(self) -> Vec2d:
+    def velocity_delta_from_key_input(self) -> Vec2d:
         """Calculate new velocity based on input and constraints
 
         Returns:
@@ -201,50 +147,57 @@ class PlantCrane(PlantBase):
         """
         # Get current state
         keys = pygame.key.get_pressed()
-        current_velocity = Vec2d(
-            self.runner.body.velocity.x, self.runner.body.velocity.y
-        )
-        current_position = Vec2d(
-            self.runner.body.position.x, self.runner.body.position.y
-        )
-
-        # Define screen bounds
-        margin = self.RUNNER_WIDTH / 2 + 10
-        left_bound = margin
-        right_bound = self.RUNNER_WIDTH - margin
-
-        # Handle bounds checking and return bounced velocity if needed
-        if current_position.x <= left_bound and current_velocity.x < 0:
-            self.runner.body.position = Vec2d(left_bound, self.runner.body.position.y)
-            return Vec2d(-current_velocity.x, 0)
-        elif current_position.x >= right_bound and current_velocity.x > 0:
-            self.runner.body.position = Vec2d(right_bound, self.runner.body.position.y)
-            return Vec2d(-current_velocity.x, 0)
+        current_velocity = self.runner.body.velocity
+        current_position_x = self.runner.body.position.x
+        left_bar_end_x = self.bar_line.position[0]
+        right_bar_end_x = self.bar_line.end_pos[0]
+        # # Define screen bounds
+        # margin = self.RUNNER_WIDTH / 2 + 10
+        # left_bound = margin
+        # right_bound = self.RUNNER_WIDTH - margin
+        window_size = pygame.display.get_window_size()
+        left_bound, right_bound = window_size
+        dt = SAMPLE_TIME
+        speed_change = self.RUNNER_SPEED * dt
+        if current_position_x >= left_bar_end_x:
+            old_velocity = current_velocity
+            self.runner.body.velocity = -old_velocity
+        elif current_position_x <= right_bar_end_x:
+            old_velocity = current_velocity
+            self.runner.body.velocity = -old_velocity
+        # # Handle bounds checking and return bounced velocity if needed
+        # if current_position.x <= left_bound and current_velocity.x < 0:
+        #     self.runner.body.position = Vec2d(left_bound, self.runner.body.position.y)
+        #     return Vec2d(-current_velocity.x + speed_change, 0)
+        # elif current_position.x >= right_bound and current_velocity.x > 0:
+        #     self.runner.body.position = Vec2d(right_bound, self.runner.body.position.y)
+        #     return Vec2d(-current_velocity.x - speed_change, 0)
 
         if keys[pygame.K_c]:
             # toggle control
             self.control_active = not self.control_active
 
         # Calculate new velocity based on input
-        dt = SAMPLE_TIME
         if keys[pygame.K_LEFT]:
-            new_x = max(
-                current_velocity.x - self.RUNNER_SPEED * dt, -self.RUNNER_MAX_SPEED
+            new_x_unclamped = current_velocity.x - speed_change
+            new_x = clamp(
+                new_x_unclamped, -self.RUNNER_MAX_SPEED, self.RUNNER_MAX_SPEED
             )
         elif keys[pygame.K_RIGHT]:
-            new_x = min(
-                current_velocity.x + self.RUNNER_SPEED * dt, self.RUNNER_MAX_SPEED
+            new_x_unclamped = current_velocity.x + speed_change
+            new_x = clamp(
+                new_x_unclamped, -self.RUNNER_MAX_SPEED, self.RUNNER_MAX_SPEED
             )
+        # else:
+        #     # Apply deceleration when no input
+        #     if abs(current_velocity.x) > 1:
+        #         decel = self.RUNNER_SPEED * dt
+        #         if current_velocity.x > 0:
+        #             new_x = max(0, current_velocity.x - decel)
+        #         else:
+        #             new_x = min(0, current_velocity.x + decel)
         else:
-            # Apply deceleration when no input
-            if abs(current_velocity.x) > 1:
-                decel = self.RUNNER_SPEED * dt
-                if current_velocity.x > 0:
-                    new_x = max(0, current_velocity.x - decel)
-                else:
-                    new_x = min(0, current_velocity.x + decel)
-            else:
-                new_x = 0
+            new_x = 0
         return Vec2d(new_x, 0)
 
     def _create_objects(self, window_size):
@@ -264,6 +217,7 @@ class PlantCrane(PlantBase):
             (100, 100, 100),  # Gray color
             5,  # thickness
         )
+        self.bar_line = bar_line
         self.non_physical_objects.append(bar_line)
 
         # Create objects
@@ -404,10 +358,15 @@ class Game:
             plant_output = self.plant.get_output()
             control_error = self.reference_signal - plant_output.angle
             # Get Key related velocity change
-            velocity_delta_from_key_input = self.plant.velocity_delta_from_key()
+            velocity_delta_from_key_input = self.plant.velocity_delta_from_key_input()
+
+            velocity_delta_from_control = Vec2d(0, 0)
+            self.plant.update_runner_velocity(
+                velocity_delta_from_control + velocity_delta_from_key_input
+            )
             # Get control input from controller
-            control_signal = self.controller.get_control_input(control_error)
-            self.plant.set_input((control_signal, 0) + velocity_delta_from_key_input)
+            # control_signal = self.controller.get_control_input(control_error)
+            # self.plant.set_input((control_signal, 0) + velocity_delta_from_key_input)
 
             # Update simulation
             self.plant.step(SAMPLE_TIME)
