@@ -5,12 +5,37 @@ import pymunk.pygame_util
 import sys
 import math
 from abc import ABC, abstractmethod
-from collections import namedtuple
+from typing import NamedTuple
 from game_controller import CraneControllerPI
 from physical_objects import PinJointConnection, Ball, Runner
 from math_helpers import clamp
 
 SAMPLE_TIME = 1 / 60.0
+
+
+# Define input/output types as class attributes using nested classes
+class PlantCraneOutput(NamedTuple):
+    """Input type for the crane plant containing control signals.
+
+    Attributes:
+        x_velocity: Target horizontal velocity for the runner (scalar value in units/second)
+    """
+
+    x_velocity: float
+    angle: float
+    angular_velocity: float
+
+
+class PlantCraneInput(NamedTuple):
+    """Output type for the crane plant containing velocity and angle information.
+
+    Attributes:
+        x_velocity: Horizontal velocity of the runner
+        angle: Current angle of the pendulum in radians
+        angular_velocity: Angular velocity of the pendulum in radians per second
+    """
+
+    x_velocity: float
 
 
 class VisualObject:
@@ -54,37 +79,8 @@ class PlantBase(ABC):
 
 
 class PlantCrane(PlantBase):
-    # Define input/output types as class attributes using nested classes
-    class Input(namedtuple("PlantCraneInput", ["x_velocity"])):
-        """Input type for the crane plant containing control signals.
-
-        Attributes:
-            x_velocity: Target horizontal velocity for the runner (scalar value in units/second)
-        """
-
-        pass
-
-    class Output(
-        namedtuple("PlantCraneOutput", ["x_velocity", "angle", "angular_velocity"])
-    ):
-        """Output type for the crane plant containing velocity and angle information.
-
-        Attributes:
-            x_velocity: Horizontal velocity of the runner
-            angle: Current angle of the pendulum in radians
-            angular_velocity: Angular velocity of the pendulum in radians per second
-        """
-
-        pass
-
-    class Input(namedtuple("PlantCraneInput", ["x_velocity"])):
-        """Input type for the crane plant containing control signals.
-
-        Attributes:
-            x_velocity: Target horizontal velocity for the runner (scalar value in units/second)
-        """
-
-        pass
+    Output = PlantCraneOutput
+    Input = PlantCraneInput
 
     def __init__(self, space: pymunk.Space, window_size: tuple):
         self.space: pymunk.Space = space
@@ -98,11 +94,15 @@ class PlantCrane(PlantBase):
         self.non_physical_objects = []
         self.control_active = True
         self._create_objects(window_size)
+        self.input = PlantCrane.Input(0.0)
+        PlantCrane.Output = PlantCrane.Output(0.0, 0.0, 0.0)
 
     def step(self, time_delta):
+        # Adjustments according to input (runner velocity)
+        self.update_runner_velocity(Vec2d(self.input.x_velocity, 0))
         self.space.step(time_delta)
 
-    def get_output(self) -> "PlantCrane.Output":
+    def get_output(self) -> "PlantCraneOutput":
         angle = self._calculate_angle_radian(
             self.runner.body.position, self.ball.body.position
         )
@@ -112,12 +112,13 @@ class PlantCrane(PlantBase):
             self.ball.body.velocity,
         )
         x_velocity = self.runner.body.velocity.x
-        return self.Output(
+        output_signal = PlantCraneOutput(
             x_velocity=x_velocity, angle=angle, angular_velocity=angular_velocity
         )
+        return output_signal
 
-    def set_input(self, input_data):
-        self.update_runner_velocity(Vec2d(input_data, 0))
+    def set_input(self, input_data) -> None:
+        self.input = input_data
 
     def draw(self, options):
         # Draw non-physical objects first (background elements)
@@ -363,10 +364,14 @@ class Game:
                 )
             current_velocity = self.plant.runner.body.velocity
 
-            self.plant.update_runner_velocity(
-                current_velocity
-                + velocity_delta_from_control
-                + velocity_delta_from_key_input
+            self.plant.set_input(
+                PlantCraneInput(
+                    x_velocity=(
+                        current_velocity.x
+                        + velocity_delta_from_control.x
+                        + velocity_delta_from_key_input.x
+                    )
+                )
             )
 
             # Update simulation
