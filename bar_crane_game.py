@@ -42,7 +42,7 @@ class Game:
         self.recent_outputs = dict()
         self.simulation_time = 0.0
 
-    def check_quit_or_ball_relocation(self):
+    def check_quit(self):
         """Check if the application should quit.
 
         Returns:
@@ -51,10 +51,13 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return True
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+        return False
+
+    def handle_user_interference(self):
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 self.plant.ball.reset_position(mouse_pos)
-        return False
 
     def update_ui(self):
         # Clear screen
@@ -68,10 +71,6 @@ class Game:
         for visual_obj in self.plant.non_physical_objects:
             visual_obj.draw(self.screen)
 
-        # Draw control signal visualization if we have current control signal
-        if hasattr(self, "current_control_signal"):
-            self.draw_control_arrow(self.current_control_signal)
-
         # Update display
         pygame.display.flip()
         self.clock.tick(60)
@@ -82,16 +81,17 @@ class Game:
         while running:
             frames_since_toggle_counter += 1
             # Check for quit event
-            if self.check_quit_or_ball_relocation():
+            if self.check_quit():
                 running = False
                 continue
+            if self.handle_user_interference():
+                pass
+
             keys = pygame.key.get_pressed()
             if keys[pygame.K_c] and frames_since_toggle_counter > 10:
                 # toggle control
                 self.control_active = not self.control_active
                 frames_since_toggle_counter = 0
-
-            self.plant.step(SAMPLE_TIME)
 
             # Get current plant output
             plant_output = self.plant.get_output()
