@@ -27,8 +27,8 @@ class Game:
         self.plant = PlantCrane(
             self.space, pygame.display.get_window_size(), SAMPLE_TIME
         )
-        INITIAL_KP = 500.0
-        INITIAL_KI = 50.0
+        INITIAL_KP = 1000.0
+        INITIAL_KI = 0.0
         self.controller = CraneControllerPI(
             kp=INITIAL_KP, ki=INITIAL_KI, sample_time=SAMPLE_TIME
         )
@@ -41,23 +41,6 @@ class Game:
         self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
         self.recent_outputs = dict()
         self.simulation_time = 0.0
-
-    def check_quit(self):
-        """Check if the application should quit.
-
-        Returns:
-            bool: True if the application should quit, False otherwise
-        """
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                return True
-        return False
-
-    def handle_user_interference(self):
-        for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
-                self.plant.ball.reset_position(mouse_pos)
 
     def update_ui(self):
         # Clear screen
@@ -118,9 +101,8 @@ class Game:
             self.plant.set_input(
                 PlantCraneInput(
                     x_velocity=(
-                        current_velocity.x
-                        + velocity_delta_from_control.x
-                        + velocity_delta_from_key_input.x
+                        current_velocity.x + velocity_delta_from_control.x
+                        # + velocity_delta_from_key_input.x
                     )
                 )
             )
