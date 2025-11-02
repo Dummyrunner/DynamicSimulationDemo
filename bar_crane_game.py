@@ -81,12 +81,16 @@ class Game:
         while running:
             frames_since_toggle_counter += 1
             # Check for quit event
-            if self.check_quit():
-                running = False
-                continue
-            if self.handle_user_interference():
-                pass
-
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    continue
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    self.plant.ball.reset_position(mouse_pos)
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    self.plant.ball.reset_position(mouse_pos)
             keys = pygame.key.get_pressed()
             if keys[pygame.K_c] and frames_since_toggle_counter > 10:
                 # toggle control
