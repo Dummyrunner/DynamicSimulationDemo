@@ -2,10 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File (.venv)",
+            "name": "Debug-Run bar crane game",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "${workspaceFolder}/bar_crane_game.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "env": {},
