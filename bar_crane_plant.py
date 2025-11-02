@@ -4,7 +4,7 @@ import pymunk.pygame_util
 from pymunk import Vec2d
 from typing import NamedTuple
 from abc import ABC, abstractmethod
-from physical_objects import PinJointConnection, Ball, Runner
+from physical_objects import PinJointConnection, Ball, DynamicRunner
 import math
 
 
@@ -139,29 +139,11 @@ class PlantCrane(PlantBase):
         # Convert input to Vec2d if it isn't already
         if not isinstance(velocity, Vec2d):
             raise TypeError("velocity must be a Vec2d instance")
-        velocity_delta = self.runner.body.velocity - velocity
         # Create new velocity vector with limits applied
         new_x = velocity.x
         if abs(new_x) > self.RUNNER_MAX_SPEED:
             new_x = self.RUNNER_MAX_SPEED if new_x > 0 else -self.RUNNER_MAX_SPEED
         new_velocity = Vec2d(new_x, 0)
-
-        current_position_x = self.runner.body.position.x
-        left_bar_end_x = self.bar_line.position[0]
-        right_bar_end_x = self.bar_line.end_pos[0]
-        # Check whether in this or next step, the runner would go beyond bar limits
-        predicted_position_x = current_position_x + new_velocity.x * self.sample_time
-
-        predicted_runner_out_of_bounds_left = (
-            predicted_position_x - self.RUNNER_WIDTH / 2 < left_bar_end_x
-        )
-        predicted_runner_out_of_bounds_right = (
-            predicted_position_x + self.RUNNER_WIDTH / 2 > right_bar_end_x
-        )
-        if predicted_runner_out_of_bounds_left:
-            new_velocity = -self.runner.body.velocity * 0.2 + velocity_delta
-        elif predicted_runner_out_of_bounds_right:
-            new_velocity = -self.runner.body.velocity * 0.2 - velocity_delta
 
         # Get the current velocity vector from the body
         self.runner.body.velocity = new_velocity
@@ -176,12 +158,16 @@ class PlantCrane(PlantBase):
         keys = pygame.key.get_pressed()
         dt = self.sample_time
 
-        # Calculate new velocity based on input
+        # # Calculate new velocity based on input
+        # if keys[pygame.K_LEFT]:
+        #     return Vec2d(-self.RUNNER_MAX_SPEED * dt, 0)
+        # elif keys[pygame.K_RIGHT]:
+        #     return Vec2d(+self.RUNNER_MAX_SPEED * dt, 0)
+        # return Vec2d(0, 0)
         if keys[pygame.K_LEFT]:
-            return Vec2d(-self.RUNNER_MAX_SPEED * dt, 0)
+            self.runner.body.apply_impulse_at_local_point((-0.5, 0), (0, 0))
         elif keys[pygame.K_RIGHT]:
-            return Vec2d(+self.RUNNER_MAX_SPEED * dt, 0)
-        return Vec2d(0, 0)
+            self.runner.body.apply_impulse_at_local_point((0.5, 0), (0, 0))
 
     def _create_objects(self, window_size):
         # Calculate positions
@@ -193,18 +179,18 @@ class PlantCrane(PlantBase):
         bar_left_x = 50
         center_pos = ((bar_right_x + bar_left_x) // 2, bar_left_y)
 
-        # Create visual bar
-        bar_line = StaticLine(
-            (bar_left_x, bar_left_y),
-            (bar_right_x, bar_right_y),
-            (100, 100, 100),  # Gray color
-            5,  # thickness
-        )
-        self.bar_line = bar_line
-        self.non_physical_objects.append(bar_line)
+        # # Create visual bar
+        # bar_line = StaticLine(
+        #     (bar_left_x, bar_left_y),
+        #     (bar_right_x, bar_right_y),
+        #     (100, 100, 100),  # Gray color
+        #     5,  # thickness
+        # )
+        # self.bar_line = bar_line
+        # self.non_physical_objects.append(bar_line)
 
         # Create objects
-        self.runner = Runner(
+        self.runner = DynamicRunner(
             self.space, center_pos, self.RUNNER_WIDTH, self.RUNNER_HEIGHT
         )
         self.ball = Ball(self.space, (window_width // 2, window_height * 0.75))
@@ -216,6 +202,13 @@ class PlantCrane(PlantBase):
             self.space, self.runner.body, self.ball.body, runner_anchor, ball_anchor
         )
 
+        # Constraint runner movement between bar ends by inducing a groove joint
+        groove_left = (bar_left_x, bar_left_y)
+        groove_right = (bar_right_x, bar_right_y)
+
+        self.groove_joint = pymunk.GrooveJoint(
+            self.space.static_body, self.runner.body, groove_left, groove_right, (0, 0)
+        )
         # Keep physical objects (include connection for drawing)
         self.all_physical_objects = [self.runner, self.ball, self.pin_joint]
 

@@ -44,6 +44,47 @@ class Runner(GameObject):
         pygame.draw.rect(surface, self.color, (pos_x, pos_y, self.width, self.height))
 
 
+class DynamicRunner(GameObject):
+    def __init__(self, space, position, width=100, height=20):
+        super().__init__(space)
+        self.width = width
+        self.height = height
+        self.color = (0, 255, 0)  # Green color
+        self.mass = 100
+        self.moment = pymunk.moment_for_box(self.mass, (self.width, self.height))
+
+        # Create kinematic body
+        self.body = pymunk.Body(
+            body_type=pymunk.Body.DYNAMIC, mass=self.mass, moment=self.moment
+        )
+        self.body.position = position
+
+        # Create rectangular shape
+        self.shape = pymunk.Poly(
+            self.body,
+            vertices=[
+                (0, 0),
+                (0, height),
+                (width, height),
+                (width, 0),
+            ],
+            transform=pymunk.Transform(tx=-0.5 * width, ty=-0.5 * height),
+            radius=1,
+        )
+        self.shape.elasticity = 0.9
+        self.shape.friction = 0.5
+        space.add(self.body, self.shape)
+
+    def draw(self, surface):
+        """Draw the runner using pygame directly."""
+        # Calculate the rectangle position (top-left corner)
+        pos_x = self.body.position.x - self.width / 2
+        pos_y = self.body.position.y - self.height / 2
+
+        # Draw the rectangle
+        pygame.draw.rect(surface, self.color, (pos_x, pos_y, self.width, self.height))
+
+
 class Ball(GameObject):
     def __init__(self, space, position, mass=90, radius=15):
         super().__init__(space)
