@@ -27,8 +27,8 @@ class Game:
         self.plant = PlantCrane(
             self.space, pygame.display.get_window_size(), SAMPLE_TIME
         )
-        INITIAL_KP = 1000.0
-        INITIAL_KI = 0.0
+        INITIAL_KP = 1e7
+        INITIAL_KI = 1e5
         self.controller = CraneControllerPI(
             kp=INITIAL_KP, ki=INITIAL_KI, sample_time=SAMPLE_TIME
         )
@@ -84,29 +84,17 @@ class Game:
             plant_output = self.plant.get_output()
             control_error = self.reference_signal - plant_output.angle
             # Get key related velocity change
-            velocity_delta_from_key_input = self.plant.velocity_delta_from_key_input()
+            force_from_key_input = self.plant.force_from_key_input()
             # Bound velocity change to not exceed max speed and bar limits
 
-            velocity_delta_from_control = (
-                Vec2d(self.controller.get_control_input(control_error), 0)
+            force_from_control = (
+                self.controller.get_control_input(control_error)
                 if self.control_active
-                else Vec2d(0, 0)
+                else 0.0
             )
-            if self.control_active:
-                self.controller.visualize_control_input(
-                    self.screen, velocity_delta_from_control.x
-                )
-            current_velocity = self.plant.runner.body.velocity
-
             self.plant.set_input(
-                PlantCraneInput(
-                    x_velocity=(
-                        current_velocity.x + velocity_delta_from_control.x
-                        # + velocity_delta_from_key_input.x
-                    )
-                )
+                PlantCraneInput(x_force=(force_from_control + force_from_key_input.x))
             )
-
             # Update simulation
             self.plant.step(SAMPLE_TIME)
             self.update_ui()

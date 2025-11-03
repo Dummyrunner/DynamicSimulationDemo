@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from physical_objects import PinJointConnection, Ball, DynamicRunner
 import math
 
-FORCE_SCALE = 1
+FORCE_SCALE = 1e6
 
 
 # Define input/output types as class attributes using nested classes
@@ -165,23 +165,12 @@ class PlantCrane(PlantBase):
         """
         # Get current state
         keys = pygame.key.get_pressed()
-
-        # # Calculate new velocity based on input
-        # if keys[pygame.K_LEFT]:
-        #     return Vec2d(-self.RUNNER_MAX_SPEED * dt, 0)
-        # elif keys[pygame.K_RIGHT]:
-        #     return Vec2d(+self.RUNNER_MAX_SPEED * dt, 0)
-        # return Vec2d(0, 0)
-        # if keys[pygame.K_LEFT]:
-        #     self.runner.body.apply_impulse_at_local_point((-0.5, 0), (0, 0))
-        # elif keys[pygame.K_RIGHT]:
-        #     self.runner.body.apply_impulse_at_local_point((0.5, 0), (0, 0))
         if keys[pygame.K_LEFT]:
-            return -FORCE_SCALE
+            return -FORCE_SCALE * Vec2d(1, 0)
         elif keys[pygame.K_RIGHT]:
-            return FORCE_SCALE
+            return FORCE_SCALE * Vec2d(1, 0)
         else:
-            return 0.0
+            return Vec2d(0, 0)
 
     def _create_objects(self, window_size, space):
         # Calculate positions
