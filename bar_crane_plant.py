@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 from physical_objects import PinJointConnection, Ball, DynamicRunner
 import math
 
+FORCE_SCALE = 1
+
 
 # Define input/output types as class attributes using nested classes
 class PlantCraneOutput(NamedTuple):
@@ -30,7 +32,7 @@ class PlantCraneInput(NamedTuple):
         angular_velocity: Angular velocity of the pendulum in radians per second
     """
 
-    x_velocity: float
+    x_force: float
 
 
 class VisualObject:
@@ -43,10 +45,16 @@ class VisualObject:
 
 
 class StaticLine(VisualObject):
-    def __init__(self, start_pos, end_pos, color=(150, 150, 150), thickness=2):
+    def __init__(self, space, start_pos, end_pos, color=(150, 150, 150), thickness=2):
         super().__init__(start_pos, color)
         self.end_pos = end_pos
         self.thickness = thickness
+        self.body = pymunk.Body(body_type=pymunk.Body.STATIC)
+        self.body.position = (
+            (end_pos[0] - start_pos[0]) / 2,
+            (end_pos[1] - start_pos[1]) / 2,
+        )
+        space.add(self.body)
 
     def draw(self, screen):
         pygame.draw.line(
@@ -90,13 +98,14 @@ class PlantCrane(PlantBase):
         self.RUNNER_HEIGHT: int = 20
         self.non_physical_objects = []
         self.control_active = True
-        self._create_objects(window_size)
+        self._create_objects(window_size, space)
         self.input = PlantCrane.Input(0.0)
         PlantCrane.Output = PlantCrane.Output(0.0, 0.0, 0.0)
 
     def step(self, time_delta):
         # Adjustments according to input (runner velocity)
-        self.update_runner_velocity(Vec2d(self.input.x_velocity, 0))
+        # self.update_runner_velocity(Vec2d(self.input.x_force, 0))
+        self.runner.body.apply_force_at_local_point((self.input.x_force, 0), (0, 0))
         self.space.step(time_delta)
 
     def get_output(self) -> "PlantCraneOutput":
@@ -148,7 +157,7 @@ class PlantCrane(PlantBase):
         # Get the current velocity vector from the body
         self.runner.body.velocity = new_velocity
 
-    def velocity_delta_from_key_input(self) -> Vec2d:
+    def force_from_key_input(self) -> Vec2d:
         """Calculate new velocity based on input and constraints
 
         Returns:
@@ -156,7 +165,6 @@ class PlantCrane(PlantBase):
         """
         # Get current state
         keys = pygame.key.get_pressed()
-        dt = self.sample_time
 
         # # Calculate new velocity based on input
         # if keys[pygame.K_LEFT]:
@@ -164,12 +172,18 @@ class PlantCrane(PlantBase):
         # elif keys[pygame.K_RIGHT]:
         #     return Vec2d(+self.RUNNER_MAX_SPEED * dt, 0)
         # return Vec2d(0, 0)
+        # if keys[pygame.K_LEFT]:
+        #     self.runner.body.apply_impulse_at_local_point((-0.5, 0), (0, 0))
+        # elif keys[pygame.K_RIGHT]:
+        #     self.runner.body.apply_impulse_at_local_point((0.5, 0), (0, 0))
         if keys[pygame.K_LEFT]:
-            self.runner.body.apply_impulse_at_local_point((-0.5, 0), (0, 0))
+            return -FORCE_SCALE
         elif keys[pygame.K_RIGHT]:
-            self.runner.body.apply_impulse_at_local_point((0.5, 0), (0, 0))
+            return FORCE_SCALE
+        else:
+            return 0.0
 
-    def _create_objects(self, window_size):
+    def _create_objects(self, window_size, space):
         # Calculate positions
         window_width = window_size[0]
         window_height = window_size[1]
@@ -179,15 +193,15 @@ class PlantCrane(PlantBase):
         bar_left_x = 50
         center_pos = ((bar_right_x + bar_left_x) // 2, bar_left_y)
 
-        # # Create visual bar
-        # bar_line = StaticLine(
-        #     (bar_left_x, bar_left_y),
-        #     (bar_right_x, bar_right_y),
-        #     (100, 100, 100),  # Gray color
-        #     5,  # thickness
-        # )
-        # self.bar_line = bar_line
-        # self.non_physical_objects.append(bar_line)
+        # Create visual bar
+        rail = StaticLine(
+            self.space,
+            (bar_left_x, bar_left_y),
+            (bar_right_x, bar_right_y),
+            (100, 100, 100),  # Gray color
+            5,  # thickness
+        )
+        self.rail = rail
 
         # Create objects
         self.runner = DynamicRunner(
@@ -199,7 +213,7 @@ class PlantCrane(PlantBase):
         runner_anchor = (0, self.RUNNER_HEIGHT / 2)  # Relative to runner's center
         ball_anchor = (0, 0)  # Center of the ball
         self.pin_joint = PinJointConnection(
-            self.space, self.runner.body, self.ball.body, runner_anchor, ball_anchor
+            space, self.runner.body, self.ball.body, runner_anchor, ball_anchor
         )
 
         # Constraint runner movement between bar ends by inducing a groove joint
@@ -207,10 +221,11 @@ class PlantCrane(PlantBase):
         groove_right = (bar_right_x, bar_right_y)
 
         self.groove_joint = pymunk.GrooveJoint(
-            self.space.static_body, self.runner.body, groove_left, groove_right, (0, 0)
+            space.static_body, self.runner.body, groove_left, groove_right, (0, 0)
         )
         # Keep physical objects (include connection for drawing)
-        self.all_physical_objects = [self.runner, self.ball, self.pin_joint]
+        self.all_physical_objects = [self.runner, self.ball, self.pin_joint, self.rail]
+        space.add(self.groove_joint)
 
     def _calculate_angle_radian(self, runner_position, ball_position):
         # Calculate vector from runner to ball
