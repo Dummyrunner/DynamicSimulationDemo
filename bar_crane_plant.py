@@ -5,9 +5,7 @@ from pymunk import Vec2d
 from typing import NamedTuple
 from abc import ABC, abstractmethod
 from physical_objects import PinJointConnection, Ball, DynamicRunner
-import math
-
-FORCE_SCALE = 1e6
+import math_helpers
 
 
 # Define input/output types as class attributes using nested classes
@@ -33,6 +31,22 @@ class PlantCraneInput(NamedTuple):
     """
 
     x_force: float
+
+
+class PlantCraneState(NamedTuple):
+    """State type for the crane plant containing positions and velocities.
+
+    Attributes:
+        runner_position: Position of the runner as Vec2d
+        runner_velocity: Velocity of the runner as Vec2d
+        ball_position: Position of the ball as Vec2d
+        ball_velocity: Velocity of the ball as Vec2d
+    """
+
+    runner_position: Vec2d
+    runner_velocity: Vec2d
+    ball_position: Vec2d
+    ball_velocity: Vec2d
 
 
 class VisualObject:
@@ -83,30 +97,46 @@ class PlantBase(ABC):
 
 
 class PlantCrane(PlantBase):
-    Output = PlantCraneOutput
-    Input = PlantCraneInput
+    class Constants:
+        RUNNER_SPEED: int = 300
+        RUNNER_MAX_SPEED: int = 600
+        RUNNER_WIDTH: int = 100
+        RUNNER_HEIGHT: int = 20
+        RUNNER_MASS: float = 10000
+        FORCE_SCALE: float = 1e6
+        GRAVITY: Vec2d = Vec2d(0, 900)
 
     def __init__(self, space: pymunk.Space, window_size: tuple, sample_time: float):
         super().__init__(sample_time=sample_time)
         self.space: pymunk.Space = space
         self.n_inputs: int = 1
         self.n_outputs: int = 4
-        self.space.gravity = (0, 900)
-        self.RUNNER_SPEED: int = 300
-        self.RUNNER_MAX_SPEED: int = 600
-        self.RUNNER_WIDTH: int = 100
-        self.RUNNER_HEIGHT: int = 20
+        self.space.gravity = PlantCrane.Constants.GRAVITY
         self.non_physical_objects = []
         self.control_active = True
         self._create_objects(window_size, space)
-        self.input = PlantCrane.Input(0.0)
-        PlantCrane.Output = PlantCrane.Output(0.0, 0.0, 0.0)
+        self.input = PlantCraneInput(0.0)
+        self.output = PlantCraneOutput(0.0, 0.0, 0.0)
+        self.state = PlantCraneState(
+            runner_position=Vec2d(0, 0),
+            runner_velocity=Vec2d(0, 0),
+            ball_position=Vec2d(0, 0),
+            ball_velocity=Vec2d(0, 0),
+        )
 
     def step(self, time_delta):
         # Adjustments according to input (runner velocity)
         # self.update_runner_velocity(Vec2d(self.input.x_force, 0))
         self.runner.body.apply_force_at_local_point((self.input.x_force, 0), (0, 0))
         self.space.step(time_delta)
+
+    def get_state(self) -> "PlantCraneState":
+        return PlantCraneState(
+            runner_position=self.runner.body.position,
+            runner_velocity=self.runner.body.velocity,
+            ball_position=self.ball.body.position,
+            ball_velocity=self.ball.body.velocity,
+        )
 
     def get_output(self) -> "PlantCraneOutput":
         angle = self._calculate_angle_radian(
@@ -117,11 +147,13 @@ class PlantCrane(PlantBase):
             self.ball.body.position,
             self.ball.body.velocity,
         )
-        x_velocity = self.runner.body.velocity.x
-        output_signal = PlantCraneOutput(
-            x_velocity=x_velocity, angle=angle, angular_velocity=angular_velocity
+
+        state = self.get_state()
+        return PlantCraneOutput(
+            x_velocity=state.runner_velocity.x,
+            angle=angle,
+            angular_velocity=angular_velocity,
         )
-        return output_signal
 
     def set_input(self, input_data) -> None:
         self.input = input_data
@@ -150,8 +182,12 @@ class PlantCrane(PlantBase):
             raise TypeError("velocity must be a Vec2d instance")
         # Create new velocity vector with limits applied
         new_x = velocity.x
-        if abs(new_x) > self.RUNNER_MAX_SPEED:
-            new_x = self.RUNNER_MAX_SPEED if new_x > 0 else -self.RUNNER_MAX_SPEED
+        if abs(new_x) > PlantCrane.Constants.RUNNER_MAX_SPEED:
+            new_x = (
+                PlantCrane.Constants.RUNNER_MAX_SPEED
+                if new_x > 0
+                else -PlantCrane.Constants.RUNNER_MAX_SPEED
+            )
         new_velocity = Vec2d(new_x, 0)
 
         # Get the current velocity vector from the body
@@ -166,9 +202,9 @@ class PlantCrane(PlantBase):
         # Get current state
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
-            return -FORCE_SCALE * Vec2d(1, 0)
+            return -PlantCrane.Constants.FORCE_SCALE * Vec2d(1, 0)
         elif keys[pygame.K_RIGHT]:
-            return FORCE_SCALE * Vec2d(1, 0)
+            return PlantCrane.Constants.FORCE_SCALE * Vec2d(1, 0)
         else:
             return Vec2d(0, 0)
 
@@ -194,12 +230,18 @@ class PlantCrane(PlantBase):
 
         # Create objects
         self.runner = DynamicRunner(
-            self.space, center_pos, self.RUNNER_WIDTH, self.RUNNER_HEIGHT
+            self.space,
+            center_pos,
+            PlantCrane.Constants.RUNNER_WIDTH,
+            PlantCrane.Constants.RUNNER_HEIGHT,
         )
         self.ball = Ball(self.space, (window_width // 2, window_height * 0.75))
 
         # Create pin joint connection (bottom center of runner to center of ball)
-        runner_anchor = (0, self.RUNNER_HEIGHT / 2)  # Relative to runner's center
+        runner_anchor = (
+            0,
+            PlantCrane.Constants.RUNNER_HEIGHT / 2,
+        )  # Relative to runner's center
         ball_anchor = (0, 0)  # Center of the ball
         self.pin_joint = PinJointConnection(
             space, self.runner.body, self.ball.body, runner_anchor, ball_anchor
@@ -218,16 +260,8 @@ class PlantCrane(PlantBase):
 
     def _calculate_angle_radian(self, runner_position, ball_position):
         # Calculate vector from runner to ball
-        dx = ball_position.x - runner_position.x
-        dy = ball_position.y - runner_position.y
-
-        # Calculate angle between this vector and vertical (0, 1)
-        # pygame.math.Vector2.angle_to returns angle in degrees
-        # Negative sign because pygame's y-axis is inverted
-        angle = -pygame.math.Vector2(dx, dy).angle_to((0, 1))
-
-        # Convert to radians for physics calculations
-        return math.radians(angle)
+        rope_vec = ball_position - runner_position
+        return math_helpers.angle_from_vertical(rope_vec)
 
     def _calculate_angle_velocity_radian_per_sec(
         self, runner_position, ball_position, ball_velocity

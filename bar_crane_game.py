@@ -1,6 +1,5 @@
 import pygame
 import pymunk
-from pymunk import Vec2d
 import pymunk.pygame_util
 import sys
 from game_controller import CraneControllerPI
@@ -63,7 +62,6 @@ class Game:
         frames_since_toggle_counter = 0
         while running:
             frames_since_toggle_counter += 1
-            # Check for quit event
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False

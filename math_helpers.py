@@ -1,3 +1,8 @@
+import math
+import pygame
+from pymunk import Vec2d
+
+
 def clamp(value, minimum, maximum):
     # Check types
     if not isinstance(value, (float, int)):
@@ -13,3 +18,15 @@ def clamp(value, minimum, maximum):
 
     # Perform clamping
     return max(min(value, maximum), minimum)
+
+
+def angle_from_vertical(vector: Vec2d) -> float:
+    """Calculate the angle in radians between the given vector and the vertical axis.
+
+    Args:
+        vector (Vec2d): The input vector.
+    Returns:
+        float: The angle in radians between the vector and the vertical axis.
+    """
+    angle = -pygame.math.Vector2(vector.x, vector.y).angle_to((0, 1))
+    return math.radians(angle)
