@@ -50,12 +50,10 @@ class DynamicRunner(GameObject):
         self.width = width
         self.height = height
         self.color = (0, 255, 0)  # Green color
-        self.mass = 100
-        self.moment = pymunk.moment_for_box(self.mass, (self.width, self.height))
-
+        self.mass = 10000
         # Create kinematic body
         self.body = pymunk.Body(
-            body_type=pymunk.Body.DYNAMIC, mass=self.mass, moment=self.moment
+            body_type=pymunk.Body.DYNAMIC, mass=self.mass, moment=float("inf")
         )
         self.body.position = position
 
@@ -72,7 +70,7 @@ class DynamicRunner(GameObject):
             radius=1,
         )
         self.shape.elasticity = 0.9
-        self.shape.friction = 0.5
+        self.shape.friction = 0.9
         space.add(self.body, self.shape)
 
     def draw(self, surface):
