@@ -261,7 +261,8 @@ class PlantCrane(PlantBase):
     def _calculate_angle_radian(self, runner_position, ball_position):
         # Calculate vector from runner to ball
         rope_vec = ball_position - runner_position
-        return math_helpers.angle_from_vertical(rope_vec)
+        vertical_down = Vec2d(0, 1)
+        return math_helpers.angle_between_vectors_radian(rope_vec, vertical_down)
 
     def _calculate_angle_velocity_radian_per_sec(
         self, runner_position, ball_position, ball_velocity

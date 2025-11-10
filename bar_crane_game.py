@@ -26,8 +26,8 @@ class Game:
         self.plant = PlantCrane(
             self.space, pygame.display.get_window_size(), SAMPLE_TIME
         )
-        INITIAL_KP = 1e7
-        INITIAL_KI = 1e5
+        INITIAL_KP = -2e7
+        INITIAL_KI = 0
         self.controller = CraneControllerPI(
             kp=INITIAL_KP, ki=INITIAL_KI, sample_time=SAMPLE_TIME
         )

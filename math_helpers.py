@@ -20,13 +20,6 @@ def clamp(value, minimum, maximum):
     return max(min(value, maximum), minimum)
 
 
-def angle_from_vertical(vector: Vec2d) -> float:
-    """Calculate the angle in radians between the given vector and the vertical axis.
-
-    Args:
-        vector (Vec2d): The input vector.
-    Returns:
-        float: The angle in radians between the vector and the vertical axis.
-    """
-    angle = -pygame.math.Vector2(vector.x, vector.y).angle_to((0, 1))
+def angle_between_vectors_radian(vec1: Vec2d, vec2: Vec2d):
+    angle = pygame.math.Vector2(vec1.x, vec1.y).angle_to((vec2))
     return math.radians(angle)
