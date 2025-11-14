@@ -172,28 +172,6 @@ class InvertedPendulumPlant(PlantBase):
         self.runner.draw(options.surface)
         self.ball.draw(options.surface)
 
-    def update_runner_velocity(self, velocity: Vec2d):
-        """Update runner's velocity with limits applied.
-
-        Args:
-            velocity: Vec2d or tuple representing the new velocity
-        """
-        # Convert input to Vec2d if it isn't already
-        if not isinstance(velocity, Vec2d):
-            raise TypeError("velocity must be a Vec2d instance")
-        # Create new velocity vector with limits applied
-        new_x = velocity.x
-        if abs(new_x) > InvertedPendulumPlant.Constants.RUNNER_MAX_SPEED:
-            new_x = (
-                InvertedPendulumPlant.Constants.RUNNER_MAX_SPEED
-                if new_x > 0
-                else -InvertedPendulumPlant.Constants.RUNNER_MAX_SPEED
-            )
-        new_velocity = Vec2d(new_x, 0)
-
-        # Get the current velocity vector from the body
-        self.runner.body.velocity = new_velocity
-
     def force_from_key_input(self) -> Vec2d:
         """Calculate new velocity based on input and constraints
 
@@ -203,8 +181,10 @@ class InvertedPendulumPlant(PlantBase):
         # Get current state
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
+            print("KEYPRESS LEFT")
             return -InvertedPendulumPlant.Constants.FORCE_SCALE * Vec2d(1, 0)
         elif keys[pygame.K_RIGHT]:
+            print("KEYPRESS RIGHT")
             return InvertedPendulumPlant.Constants.FORCE_SCALE * Vec2d(1, 0)
         else:
             return Vec2d(0, 0)
