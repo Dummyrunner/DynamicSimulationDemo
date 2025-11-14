@@ -126,3 +126,40 @@ class PinJointConnection:
         r = 3
         pygame.draw.circle(surface, self.color, (int(pos_a.x), int(pos_a.y)), r)
         pygame.draw.circle(surface, self.color, (int(pos_b.x), int(pos_b.y)), r)
+
+
+class BoatTopDown(GameObject):
+    def __init__(self, space, position, length, width):
+        super().__init__(space)
+        self.width = width
+        self.length = length
+        self.color = (0, 255, 0)  # Green color
+        self.mass = 10000
+        # Create kinematic body
+        self.body = pymunk.Body(
+            body_type=pymunk.Body.DYNAMIC, mass=self.mass, moment=float("inf")
+        )
+        self.body.position = position
+
+        # Create rectangular shape
+        self.shape = pymunk.Poly(
+            self.body,
+            vertices=[
+                (0, 0),
+                (0, length),
+                (width, length),
+                (width, 0),
+            ],
+            transform=pymunk.Transform(tx=-0.5 * width, ty=-0.5 * length),
+            radius=1,
+        )
+        self.shape.elasticity = 0.9
+        self.shape.friction = 0.9
+        space.add(self.body, self.shape)
+
+    def draw(self, screen):
+        pos_x = self.body.position.x - self.width / 2
+        pos_y = self.body.position.y - self.length / 2
+
+        # Draw the rectangle
+        pygame.draw.rect(screen, self.color, (pos_x, pos_y, self.width, self.length))
