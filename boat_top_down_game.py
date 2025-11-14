@@ -1,7 +1,7 @@
 import pygame
 import pymunk
 import sys
-from boat_top_down_plant import BoatTopdownPlant
+from boat_top_down_plant import BoatTopdownPlant, BoatTopdownInput, BoatTopdownState
 
 SAMPLE_TIME = 1 / 60.0
 WINDOW_WIDTH = 1200
@@ -50,6 +50,12 @@ class Game:
         running = True
         while running:
             # Update simulation
+            self.update_ui()
+            plant_output = self.plant.get_output()
+            pygame.event.get()
+            torque = self.plant.force_from_key_input()
+            print("INPUT TORQUE: ", torque)
+            self.plant.set_input(BoatTopdownInput(torque))
             self.plant.step(SAMPLE_TIME)
             self.update_ui()
 
