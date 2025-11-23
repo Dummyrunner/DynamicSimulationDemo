@@ -134,7 +134,7 @@ class BoatTopDown(GameObject):
         self.width = width
         self.length = length
         self.color = (0, 255, 0)  # Green color
-        self.mass = 10000
+        self.mass = 1000
         # Calculate moment of inertia for a rectangle
         moment = (1 / 12) * self.mass * (self.width**2 + self.length**2)
         # Create dynamic body with proper inertia for rotation
