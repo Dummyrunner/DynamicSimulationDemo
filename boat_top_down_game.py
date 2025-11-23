@@ -53,6 +53,9 @@ class Game:
             self.update_ui()
             plant_output = self.plant.get_output()
             pygame.event.get()
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_ESCAPE]:
+                running = False
             torque = self.plant.force_from_key_input()
             print("INPUT TORQUE: ", torque)
             self.plant.set_input(BoatTopdownInput(torque))
