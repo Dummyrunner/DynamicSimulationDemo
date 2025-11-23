@@ -72,7 +72,8 @@ class Game:
                 # toggle control
                 self.control_active = not self.control_active
                 frames_since_toggle_counter = 0
-
+            if keys[pygame.K_ESCAPE]:
+                running = False
             # Get current plant output
             plant_output = self.plant.get_output()
             control_error = self.reference_signal - plant_output.angle
