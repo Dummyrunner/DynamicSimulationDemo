@@ -1,6 +1,5 @@
 import pygame
 import pymunk
-import math
 import pymunk.pygame_util
 from pymunk import Vec2d
 from typing import NamedTuple
@@ -9,7 +8,6 @@ from physical_objects import PinJointConnection, Ball, DynamicRunner
 import math_helpers
 
 
-# Define input/output types as class attributes using nested classes
 class InvertedPendulumOutput(NamedTuple):
     """Input type for the inverted pendulum plant containing control signals.
 
@@ -17,9 +15,10 @@ class InvertedPendulumOutput(NamedTuple):
         x_velocity: Target horizontal velocity for the runner (scalar value in units/second)
     """
 
-    x_velocity: float
-    angle: float
-    angular_velocity: float
+    runner_position_x: float
+    runner_velocity_x: float
+    joint_angle: float
+    joint_angular_velocity: float
 
 
 class InvertedPendulumInput(NamedTuple):
@@ -44,10 +43,10 @@ class InvertedPendulumState(NamedTuple):
         ball_velocity: Velocity of the ball as Vec2d
     """
 
-    runner_position: Vec2d
-    runner_velocity: Vec2d
-    ball_position: Vec2d
-    ball_velocity: Vec2d
+    runner_position_x: float
+    runner_velocity_x: float
+    joint_angle: float
+    joint_angular_velocity: float
 
 
 class VisualObject:
@@ -117,29 +116,20 @@ class InvertedPendulumPlant(PlantBase):
         self.control_active = True
         self._create_objects(window_size, space)
         self.input = InvertedPendulumInput(0.0)
-        self.output = InvertedPendulumOutput(0.0, 0.0, 0.0)
+        self.output = InvertedPendulumOutput(0.0, 0.0, 0.0, 0.0)
         self.state = InvertedPendulumState(
-            runner_position=Vec2d(0, 0),
-            runner_velocity=Vec2d(0, 0),
-            ball_position=Vec2d(0, 0),
-            ball_velocity=Vec2d(0, 0),
+            runner_position_x=0.0,
+            runner_velocity_x=0.0,
+            joint_angle=0.0,
+            joint_angular_velocity=0.0,
         )
 
     def step(self, time_delta):
         # Adjustments according to input (runner velocity)
-        # self.update_runner_velocity(Vec2d(self.input.x_force, 0))
         self.runner.body.apply_force_at_local_point((self.input.x_force, 0), (0, 0))
         self.space.step(time_delta)
 
     def get_state(self) -> "InvertedPendulumState":
-        return InvertedPendulumState(
-            runner_position=self.runner.body.position,
-            runner_velocity=self.runner.body.velocity,
-            ball_position=self.ball.body.position,
-            ball_velocity=self.ball.body.velocity,
-        )
-
-    def get_output(self) -> "InvertedPendulumOutput":
         angle = self._calculate_angle_radian(
             self.runner.body.position, self.ball.body.position
         )
@@ -148,12 +138,20 @@ class InvertedPendulumPlant(PlantBase):
             self.ball.body.position,
             self.ball.body.velocity,
         )
+        return InvertedPendulumState(
+            runner_position_x=float(self.runner.body.position.x),
+            runner_velocity_x=float(self.runner.body.velocity.x),
+            joint_angle=angle,
+            joint_angular_velocity=angular_velocity,
+        )
 
+    def get_output(self) -> "InvertedPendulumOutput":
         state = self.get_state()
         return InvertedPendulumOutput(
-            x_velocity=state.runner_velocity.x,
-            angle=angle,
-            angular_velocity=angular_velocity,
+            runner_position_x=state.runner_position_x,
+            runner_velocity_x=state.runner_velocity_x,
+            joint_angle=state.joint_angle,
+            joint_angular_velocity=state.joint_angular_velocity,
         )
 
     def set_input(self, input_data) -> None:
@@ -164,6 +162,7 @@ class InvertedPendulumPlant(PlantBase):
         self.runner.draw(screen)
         self.ball.draw(screen)
         self.pin_joint.draw(screen)
+        self.rail.draw(screen)
 
     def force_from_key_input(self) -> Vec2d:
         """Calculate new velocity based on input and constraints
@@ -197,8 +196,8 @@ class InvertedPendulumPlant(PlantBase):
             self.space,
             (bar_left_x, bar_left_y),
             (bar_right_x, bar_right_y),
-            (100, 100, 100),  # Gray color
-            5,  # thickness
+            color=(100, 100, 100),
+            thickness=5,
         )
         self.rail = rail
 

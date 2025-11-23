@@ -74,13 +74,12 @@ class Game:
                 frames_since_toggle_counter = 0
             if keys[pygame.K_ESCAPE]:
                 running = False
+
             # Get current plant output
             plant_output = self.plant.get_output()
-            control_error = self.reference_signal - plant_output.angle
+            control_error = self.reference_signal - plant_output.joint_angle
             # Get key related velocity change
             force_from_key_input = self.plant.force_from_key_input()
-            # Bound velocity change to not exceed max speed and bar limits
-
             force_from_control = (
                 self.controller.get_control_input(control_error)
                 if self.control_active
