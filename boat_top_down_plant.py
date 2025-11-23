@@ -9,7 +9,7 @@ import pygame
 
 BOAT_SPEED = 20
 STEERING_TORQUE = 1e7
-BOAT_LENGTH = 25
+BOAT_LENGTH = 100
 BOAT_WIDTH = 10
 
 
@@ -65,8 +65,15 @@ class BoatTopdownPlant(PlantBase):
         self.window_with = window_size[0]
 
     def step(self, time_delta):
+        # Apply counter-rotating forces at opposite offsets to create pure torque
+        offset = (0, BOAT_LENGTH)  # Offset along boat length
+        force_magnitude = self.input.steering_torque
+        force = (force_magnitude, 0)  # Horizontal force at vertical offset = rotation
+        # Apply force perpendicular to offset (to create torque, not translation)
+        self.boat.body.apply_force_at_local_point(force, offset)
+        # Apply equal and opposite forces to prevent translation
         self.boat.body.apply_force_at_local_point(
-            self.input.steering_torque, Vec2d(0, BOAT_LENGTH / 2)
+            (-force[0], -force[1]), (-offset[0], -offset[1])
         )
         self.space.step(time_delta)
 

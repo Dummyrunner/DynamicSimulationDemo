@@ -1,7 +1,7 @@
 import pygame
 import pymunk
 import sys
-from boat_top_down_plant import BoatTopdownPlant, BoatTopdownInput, BoatTopdownState
+from boat_top_down_plant import BoatTopdownPlant, BoatTopdownInput
 
 SAMPLE_TIME = 1 / 60.0
 WINDOW_WIDTH = 1200

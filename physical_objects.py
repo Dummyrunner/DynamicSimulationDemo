@@ -135,9 +135,13 @@ class BoatTopDown(GameObject):
         self.length = length
         self.color = (0, 255, 0)  # Green color
         self.mass = 10000
-        # Create kinematic body
+        # Calculate moment of inertia for a rectangle
+        moment = (1 / 12) * self.mass * (self.width**2 + self.length**2)
+        # Create dynamic body with proper inertia for rotation
         self.body = pymunk.Body(
-            body_type=pymunk.Body.DYNAMIC, mass=self.mass, moment=float("inf")
+            body_type=pymunk.Body.DYNAMIC,
+            mass=self.mass,
+            moment=moment,
         )
         self.body.position = position
 

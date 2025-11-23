@@ -20,6 +20,16 @@
             "cwd": "${workspaceFolder}",
             "env": {},
             "python": "${workspaceFolder}/.venv/bin/python3"
+        },
+        {
+            "name": "Debug-Run Boat",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/boat_top_down_game.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "python": "${workspaceFolder}/.venv/bin/python3"
         }
     ]
 }
