@@ -33,15 +33,7 @@ class Game:
     def update_ui(self):
         # Clear screen
         self.screen.fill((255, 255, 255))
-
-        # Draw all objects using debug draw
-        for obj in self.plant.all_physical_objects:
-            obj.draw(self.screen)
-
-        # Draw all visual-only objects
-        for visual_obj in self.plant.non_physical_objects:
-            visual_obj.draw(self.screen)
-
+        self.plant.draw(pymunk.pygame_util.DrawOptions(self.screen), self.screen)
         # Update display
         pygame.display.flip()
         self.clock.tick(60)
@@ -56,9 +48,9 @@ class Game:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_ESCAPE]:
                 running = False
-            torque = self.plant.force_from_key_input()
-            print("INPUT TORQUE: ", torque)
-            self.plant.set_input(BoatTopdownInput(torque))
+            torque_magnitude = abs(self.plant.force_from_key_input())
+            print("INPUT TORQUE: ", torque_magnitude)
+            self.plant.set_input(BoatTopdownInput(steering_torque=torque_magnitude))
             self.plant.step(SAMPLE_TIME)
             self.update_ui()
 

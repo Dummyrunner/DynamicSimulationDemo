@@ -93,8 +93,14 @@ class BoatTopdownPlant(PlantBase):
     def set_input(self, input_data) -> None:
         self.input = input_data
 
-    def draw(self, options):
-        pass
+    def draw(self, options, screen):
+        # Draw all objects using debug draw
+        for obj in self.all_physical_objects:
+            obj.draw(screen)
+
+        # Draw all visual-only objects
+        for visual_obj in self.non_physical_objects:
+            visual_obj.draw(self.screen)
 
     def force_from_key_input(self) -> Vec2d:
         """
@@ -118,7 +124,8 @@ class BoatTopdownPlant(PlantBase):
             space, position=(pos_x, pos_y), length=BOAT_LENGTH, width=BOAT_WIDTH
         )
         self.all_physical_objects.append(self.boat)
-        self.boat.body.velocity = Vec2d(0, -BOAT_SPEED)
+        # self.boat.body.velocity = Vec2d(0, -BOAT_SPEED)
+        self.boat.body.velocity = Vec2d(0, -0)
 
     def _calculate_angle_radian(self):
         # Calculate vector from runner to ball
