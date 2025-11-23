@@ -159,18 +159,11 @@ class InvertedPendulumPlant(PlantBase):
     def set_input(self, input_data) -> None:
         self.input = input_data
 
-    def draw(self, options):
-        # Draw non-physical objects first (background elements)
-        for obj in self.non_physical_objects:
-            obj.draw(options.surface)
-
-        # Draw the pin joint connection (if present)
-        if hasattr(self, "pin_joint") and self.pin_joint is not None:
-            self.pin_joint.draw(options.surface)
-
+    def draw(self, options, screen):
         # Draw game objects with their custom draw methods
-        self.runner.draw(options.surface)
-        self.ball.draw(options.surface)
+        self.runner.draw(screen)
+        self.ball.draw(screen)
+        self.pin_joint.draw(screen)
 
     def force_from_key_input(self) -> Vec2d:
         """Calculate new velocity based on input and constraints

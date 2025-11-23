@@ -5,9 +5,7 @@ import sys
 from game_controller import CraneControllerPI
 from inverted_pendulum_plant import (
     InvertedPendulumPlant,
-    InvertedPendulumOutput,
     InvertedPendulumInput,
-    InvertedPendulumState,
 )
 
 SAMPLE_TIME = 1 / 60.0
@@ -49,15 +47,7 @@ class Game:
     def update_ui(self):
         # Clear screen
         self.screen.fill((255, 255, 255))
-
-        # Draw all objects using debug draw
-        for obj in self.plant.all_physical_objects:
-            obj.draw(self.screen)
-
-        # Draw all visual-only objects
-        for visual_obj in self.plant.non_physical_objects:
-            visual_obj.draw(self.screen)
-
+        self.plant.draw(self.draw_options, self.screen)
         # Update display
         pygame.display.flip()
         self.clock.tick(60)
