@@ -2,7 +2,7 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 import sys
-from game_controller import CraneControllerPI
+from game_controller import CraneControllerPID
 from inverted_pendulum_plant import (
     InvertedPendulumPlant,
     InvertedPendulumInput,
@@ -12,6 +12,7 @@ from pymunk import Vec2d
 SAMPLE_TIME = 1 / 60.0
 INITIAL_KP = 3e7
 INITIAL_KI = 0
+INITIAL_KD = 0
 
 
 class Game:
@@ -32,8 +33,8 @@ class Game:
         self.plant = InvertedPendulumPlant(
             self.space, pygame.display.get_window_size(), SAMPLE_TIME
         )
-        self.controller = CraneControllerPI(
-            kp=INITIAL_KP, ki=INITIAL_KI, sample_time=SAMPLE_TIME
+        self.controller = CraneControllerPID(
+            kp=INITIAL_KP, ki=INITIAL_KI, kd=INITIAL_KD, sample_time=SAMPLE_TIME
         )
         # Create visual-only objects list (will be populated in setup_objects)
         self.non_physical_objects = []

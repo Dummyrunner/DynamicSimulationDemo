@@ -2,7 +2,7 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 import sys
-from game_controller import CraneControllerPI
+from game_controller import CraneControllerPID
 from bar_crane_plant import PlantCrane, PlantCraneInput
 
 SAMPLE_TIME = 1 / 60.0
@@ -28,8 +28,9 @@ class Game:
         )
         INITIAL_KP = -2e7
         INITIAL_KI = 0
-        self.controller = CraneControllerPI(
-            kp=INITIAL_KP, ki=INITIAL_KI, sample_time=SAMPLE_TIME
+        INITIAL_KD = 0
+        self.controller = CraneControllerPID(
+            kp=INITIAL_KP, ki=INITIAL_KI, kd=INITIAL_KD, sample_time=SAMPLE_TIME
         )
         # Create visual-only objects list (will be populated in setup_objects)
         self.non_physical_objects = []

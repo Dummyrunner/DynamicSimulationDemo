@@ -19,12 +19,14 @@ class GameControllerBase(ABC):
         print(f"PID Control Input: {control_input}")
 
 
-class CraneControllerPI(GameControllerBase):
-    def __init__(self, kp: float, ki: float, sample_time: float):
+class CraneControllerPID(GameControllerBase):
+    def __init__(self, kp: float, ki: float, kd: float, sample_time: float):
         super().__init__()
         self._kp = kp
         self._ki = ki
+        self._kd = kd
         self.integral = 0.0
+        self.previous_error = 0.0
         self.sample_time = sample_time
 
     @property
@@ -49,7 +51,10 @@ class CraneControllerPI(GameControllerBase):
 
     def get_control_input(self, control_error):
         self.integral += control_error * self.sample_time
-        control_signal = self.kp * control_error + self.ki * self.integral
+        derivative = (control_error - self.previous_error) / self.sample_time
+        control_signal = (
+            self.kp * control_error + self.ki * self.integral + self._kd * derivative
+        )
         print(f"PI Control Input: {control_signal}, Integral: {self.integral}")
         return control_signal
 
