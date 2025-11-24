@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import numpy as np
 
 
 class GameControllerBase(ABC):
@@ -61,6 +62,28 @@ class CraneControllerPID(GameControllerBase):
     def visualize_control_input(self, display, control_input):
         # Visualization code for PID control input
         print(f"PI Control Input: {control_input}, Integral: {self.integral}")
+
+
+class StateFeedbackController(GameControllerBase):
+    def __init__(self, gain_matrix):
+        super().__init__()
+        self.gain_matrix = gain_matrix
+
+    def get_control_input(self, state_vector):
+        # convert name tuple to numpy array if needed
+        if not isinstance(state_vector, np.ndarray):
+            state_vector = np.array(state_vector)
+        # check dimensions
+        if state_vector.shape[0] != self.gain_matrix.shape[1]:
+            raise ValueError(
+                f"State vector dimension {state_vector.shape[0]} does not match gain matrix columns {self.gain_matrix.shape[1]}"
+            )
+        control_signal = -self.gain_matrix @ state_vector
+        return control_signal
+
+    def visualize_control_input(self, control_input):
+        # Visualization code for state feedback control input
+        print(f"State Feedback Control Input: {control_input}")
 
 
 # def draw_control_arrow(self, control_signal):
