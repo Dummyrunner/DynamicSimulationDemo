@@ -10,6 +10,8 @@ from inverted_pendulum_plant import (
 from pymunk import Vec2d
 
 SAMPLE_TIME = 1 / 60.0
+INITIAL_KP = 3e7
+INITIAL_KI = 0
 
 
 class Game:
@@ -30,8 +32,6 @@ class Game:
         self.plant = InvertedPendulumPlant(
             self.space, pygame.display.get_window_size(), SAMPLE_TIME
         )
-        INITIAL_KP = 3e7
-        INITIAL_KI = 0
         self.controller = CraneControllerPI(
             kp=INITIAL_KP, ki=INITIAL_KI, sample_time=SAMPLE_TIME
         )
@@ -69,8 +69,8 @@ class Game:
                     mouse_pos = pygame.mouse.get_pos()
                     self.plant.ball.reset_position(mouse_pos)
             keys = pygame.key.get_pressed()
+            # Lock  control toggle for 10 frames to prevent rapid toggling
             if keys[pygame.K_c] and frames_since_toggle_counter > 10:
-                # toggle control
                 self.control_active = not self.control_active
                 frames_since_toggle_counter = 0
             if keys[pygame.K_ESCAPE]:
