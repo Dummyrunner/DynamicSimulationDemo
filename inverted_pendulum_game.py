@@ -66,9 +66,6 @@ class Game:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = pygame.mouse.get_pos()
                     self.plant.ball.reset_position(mouse_pos)
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = pygame.mouse.get_pos()
-                    self.plant.ball.reset_position(mouse_pos)
             keys = pygame.key.get_pressed()
             # Lock  control toggle for 10 frames to prevent rapid toggling
             if keys[pygame.K_c] and frames_since_toggle_counter > 10:
