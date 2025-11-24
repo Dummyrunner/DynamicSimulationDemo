@@ -14,7 +14,7 @@ class DynamicRunner(GameObject):
         super().__init__(space)
         self.width = width
         self.height = height
-        self.color = (0, 255, 0)  # Green color
+        self.color = (0, 100, 0)  # Green color
         self.mass = 10000
         # Create kinematic body
         self.body = pymunk.Body(
@@ -52,7 +52,7 @@ class Ball(GameObject):
     def __init__(self, space, position, mass=90, radius=15):
         super().__init__(space)
         self.radius = radius
-        self.color = (255, 0, 0)
+        self.color = (150, 0, 200)
 
         # Create dynamic body
         moment = pymunk.moment_for_circle(mass, 0, radius)

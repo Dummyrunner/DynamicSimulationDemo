@@ -104,7 +104,7 @@ class InvertedPendulumPlant(PlantBase):
         RUNNER_HEIGHT: int = 20
         RUNNER_MASS: float = 10000
         FORCE_SCALE: float = 1e7
-        GRAVITY: Vec2d = Vec2d(0, 900)
+        GRAVITY: Vec2d = Vec2d(0, 9.81)
 
     def __init__(self, space: pymunk.Space, window_size: tuple, sample_time: float):
         super().__init__(sample_time=sample_time)
