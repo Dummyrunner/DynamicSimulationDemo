@@ -8,6 +8,7 @@ dependencies = [
     "control>=0.10.2",
     "debugpy>=1.8.17",
     "pygame>=2.6.1",
+    "pygame-widgets>=1.2.3",
     "pymunk>=7.1.0",
     "pytest>=9.0.0",
 ]
