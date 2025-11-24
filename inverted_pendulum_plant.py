@@ -164,7 +164,7 @@ class InvertedPendulumPlant(PlantBase):
         self.pin_joint.draw(screen)
         self.rail.draw(screen)
 
-    def force_from_key_input(self) -> Vec2d:
+    def input_from_key(self) -> Vec2d:
         """Calculate new velocity based on input and constraints
 
         Returns:
@@ -173,13 +173,11 @@ class InvertedPendulumPlant(PlantBase):
         # Get current state
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
-            print("KEYPRESS LEFT")
-            return -InvertedPendulumPlant.Constants.FORCE_SCALE * Vec2d(1, 0)
+            return -InvertedPendulumPlant.Constants.FORCE_SCALE
         elif keys[pygame.K_RIGHT]:
-            print("KEYPRESS RIGHT")
-            return InvertedPendulumPlant.Constants.FORCE_SCALE * Vec2d(1, 0)
+            return InvertedPendulumPlant.Constants.FORCE_SCALE
         else:
-            return Vec2d(0, 0)
+            return 0.0
 
     def _create_objects(self, window_size, space):
         # Calculate positions

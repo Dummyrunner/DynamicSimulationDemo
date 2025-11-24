@@ -7,6 +7,7 @@ from inverted_pendulum_plant import (
     InvertedPendulumPlant,
     InvertedPendulumInput,
 )
+from pymunk import Vec2d
 
 SAMPLE_TIME = 1 / 60.0
 
@@ -76,10 +77,10 @@ class Game:
                 running = False
 
             # Get current plant output
-            plant_output = self.plant.get_output()
-            control_error = self.reference_signal - plant_output.joint_angle
+            plant_state = self.plant.get_state()
+            control_error = self.reference_signal - plant_state.joint_angle
             # Get key related velocity change
-            force_from_key_input = self.plant.force_from_key_input()
+            input_signal_from_key = self.plant.input_from_key()
             force_from_control = (
                 self.controller.get_control_input(control_error)
                 if self.control_active
@@ -87,7 +88,7 @@ class Game:
             )
             self.plant.set_input(
                 InvertedPendulumInput(
-                    x_force=(force_from_control + force_from_key_input.x)
+                    x_force=(force_from_control + input_signal_from_key)
                 )
             )
             # Update simulation
