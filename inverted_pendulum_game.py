@@ -33,7 +33,8 @@ class Game:
         # Constants
         self.WIDTH = WINDOW_WIDTH
         self.HEIGHT = WINDOW_HEIGHT
-        self.reference_signal = 0.0
+        self.reference_signal_angle = 0.0
+        self.reference_signal_position = 0.0
         # Set up display
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("Inverted Pendulum")
@@ -50,7 +51,7 @@ class Game:
         self.non_physical_objects = []
         self.control_active = True
 
-        self.reference_signal = 0.0
+        self.reference_signal_angle = 0.0
         self.reference_signal_slider = Slider(
             self.screen,
             SLIDER_POS_X,
@@ -119,7 +120,31 @@ class Game:
             pygame_widgets.update(events)
             # Get current plant output
             plant_state = self.plant.get_state()
-            control_error = self.reference_signal - plant_state.joint_angle
+
+            # Update reference signals from slider
+            # Extract groove joint boundaries - they are stored as anchor points
+            groove_a = (
+                self.plant.groove_joint.groove_a
+            )  # First anchor point in world space
+            groove_b = (
+                self.plant.groove_joint.groove_b
+            )  # Second anchor point in world space
+            groove_left_x = min(groove_a.x, groove_b.x)
+            groove_right_x = max(groove_a.x, groove_b.x)
+
+            # Slider range: -100 to 100 (centered at 0)
+            slider_value = self.reference_signal_slider.getValue()
+            # Map slider value to position: -100 -> groove_left_x, 0 -> center, 100 -> groove_right_x
+            center_x = (groove_left_x + groove_right_x) / 2.0
+            left_offset = center_x - groove_left_x
+            right_offset = groove_right_x - center_x
+            max_offset = max(left_offset, right_offset)
+            self.reference_signal_position = (
+                center_x + (slider_value / 100.0) * max_offset
+            )
+            print("REF SIG POSITION: ", self.reference_signal_position)
+
+            control_error = self.reference_signal_angle - plant_state.joint_angle
             # Get key related velocity change
             input_signal_from_key = self.plant.input_from_key()
             force_from_control = (
