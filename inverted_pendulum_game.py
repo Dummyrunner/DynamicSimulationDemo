@@ -16,6 +16,14 @@ INITIAL_KP = 3e7
 INITIAL_KI = 0
 INITIAL_KD = 0
 
+WINDOW_WIDTH = 1200
+WINDOW_HEIGHT = 800
+
+SLIDER_POS_X = int(WINDOW_WIDTH * 0.2)
+SLIDER_POS_Y = int(WINDOW_HEIGHT * 0.9)
+SLIDER_WIDTH = int(WINDOW_WIDTH * 0.6)
+SLIDER_HEIGHT = 20
+
 
 class Game:
     def __init__(self):
@@ -23,8 +31,8 @@ class Game:
         pygame.init()
 
         # Constants
-        self.WIDTH = 1200
-        self.HEIGHT = 800
+        self.WIDTH = WINDOW_WIDTH
+        self.HEIGHT = WINDOW_HEIGHT
         self.reference_signal = 0.0
         # Set up display
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
@@ -45,13 +53,13 @@ class Game:
         self.reference_signal = 0.0
         self.reference_signal_slider = Slider(
             self.screen,
-            int(self.WIDTH * 0.2),
-            int(self.HEIGHT * 0.9),
-            int(self.WIDTH * 0.6),
-            20,
-            min=-100,
-            max=100,
-            step=1,
+            SLIDER_POS_X,
+            SLIDER_POS_Y,
+            SLIDER_WIDTH,
+            SLIDER_HEIGHT,
+        )
+        self.slider_rect = Game._create_slider_covering_rect(
+            self.reference_signal_slider
         )
         # Clock for frame rate
         self.clock = pygame.time.Clock()
@@ -72,6 +80,15 @@ class Game:
         pygame.display.flip()
         self.clock.tick(60)
 
+    def _create_slider_covering_rect(slider: Slider):
+        slider_rect = pygame.Rect(
+            slider.getX(),
+            slider.getY() - slider.getHeight() // 2,
+            slider.getWidth(),
+            slider.getHeight() * 8,
+        )
+        return slider_rect
+
     def main_loop(self):
         running = True
         frames_since_toggle_counter = 0
@@ -85,13 +102,7 @@ class Game:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = pygame.mouse.get_pos()
                     # Only reset ball position if click is not on the slider
-                    slider_rect = pygame.Rect(
-                        int(self.WIDTH * 0.2),
-                        int(self.HEIGHT * 0.9) - 20,
-                        int(self.WIDTH * 0.6),
-                        40,
-                    )
-                    if not slider_rect.collidepoint(mouse_pos):
+                    if not self.slider_rect.collidepoint(mouse_pos):
                         self.plant.ball.reset_position(mouse_pos)
 
             # Update pygame_widgets with events (for slider interaction)
