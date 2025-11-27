@@ -95,6 +95,25 @@ class Game:
         )
         return slider_rect
 
+    def _update_reference_signal_from_slider(self):
+        """Update reference_signal_position based on slider value and groove joint bounds."""
+        # Extract groove joint boundaries - they are stored as anchor points
+        groove_a = self.plant.groove_joint.groove_a  # First anchor point in world space
+        groove_b = (
+            self.plant.groove_joint.groove_b
+        )  # Second anchor point in world space
+        groove_left_x = min(groove_a.x, groove_b.x)
+        groove_right_x = max(groove_a.x, groove_b.x)
+
+        # Slider range: -100 to 100 (centered at 0)
+        slider_value = self.reference_signal_slider.getValue()
+        # Map slider value to position: -100 -> groove_left_x, 0 -> center, 100 -> groove_right_x
+        center_x = (groove_left_x + groove_right_x) / 2.0
+        left_offset = center_x - groove_left_x
+        right_offset = groove_right_x - center_x
+        max_offset = max(left_offset, right_offset)
+        self.reference_signal_position = center_x + (slider_value / 100.0) * max_offset
+
     def main_loop(self):
         running = True
         frames_since_toggle_counter = 0
@@ -131,27 +150,7 @@ class Game:
             plant_state = self.plant.get_state()
 
             # Update reference signals from slider
-            # Extract groove joint boundaries - they are stored as anchor points
-            groove_a = (
-                self.plant.groove_joint.groove_a
-            )  # First anchor point in world space
-            groove_b = (
-                self.plant.groove_joint.groove_b
-            )  # Second anchor point in world space
-            groove_left_x = min(groove_a.x, groove_b.x)
-            groove_right_x = max(groove_a.x, groove_b.x)
-
-            # Slider range: -100 to 100 (centered at 0)
-            slider_value = self.reference_signal_slider.getValue()
-            # Map slider value to position: -100 -> groove_left_x, 0 -> center, 100 -> groove_right_x
-            center_x = (groove_left_x + groove_right_x) / 2.0
-            left_offset = center_x - groove_left_x
-            right_offset = groove_right_x - center_x
-            max_offset = max(left_offset, right_offset)
-            self.reference_signal_position = (
-                center_x + (slider_value / 100.0) * max_offset
-            )
-            print("REF SIG POSITION: ", self.reference_signal_position)
+            self._update_reference_signal_from_slider()
 
             control_error = self.reference_signal_angle - plant_state.joint_angle
             # Get key related velocity change
