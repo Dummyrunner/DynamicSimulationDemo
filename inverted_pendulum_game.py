@@ -7,6 +7,7 @@ from inverted_pendulum_plant import (
     InvertedPendulumPlant,
     InvertedPendulumInput,
 )
+from data_plotter import DataPlotter
 from pymunk import Vec2d
 from pygame_widgets.slider import Slider
 import pygame_widgets
@@ -51,6 +52,10 @@ class Game:
         self.non_physical_objects = []
         self.control_active = True
 
+        # Initialize data plotter
+        self.data_plotter = DataPlotter(max_points=10000, update_interval=20)
+        self.data_plotter.live_update_active = False
+
         self.reference_signal_angle = 0.0
         self.reference_signal_slider = Slider(
             self.screen,
@@ -93,6 +98,10 @@ class Game:
     def main_loop(self):
         running = True
         frames_since_toggle_counter = 0
+
+        # Start displaying the live plot
+        self.data_plotter.show_live()
+
         while running:
             frames_since_toggle_counter += 1
             events = pygame.event.get()
@@ -159,8 +168,28 @@ class Game:
             )
             # Update simulation
             self.plant.step(SAMPLE_TIME)
+
+            # Log data for plotting
+            self.data_plotter.log_data(
+                control_error=control_error,
+                runner_position_x=plant_state.runner_position_x,
+                runner_velocity_x=plant_state.runner_velocity_x,
+                joint_angle=plant_state.joint_angle,
+                joint_angular_velocity=plant_state.joint_angular_velocity,
+                time_delta=SAMPLE_TIME,
+            )
+
+            # Update plot display periodically
+            self.data_plotter.update_plot()
+
             self.update_ui(events)
             self.simulation_time += SAMPLE_TIME
+
+        # Save final plot to file
+        self.data_plotter.save("inverted_pendulum_simulation_final.html")
+        print(
+            "Simulation ended. Final plot saved to inverted_pendulum_simulation_final.html"
+        )
 
         pygame.quit()
         sys.exit()
