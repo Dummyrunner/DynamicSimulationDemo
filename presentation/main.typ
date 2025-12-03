@@ -36,6 +36,24 @@ Schlauer Satz
 - Beispiel 1
 - Beispiel 2
 
+= Systemanalyse
+== Linearität
+Was bedeutet, ein System ist *linear*?
+- Superpositionsprinzip
+TODO Anschauliche Erklärung
+
+== Stabilität
+- Gleichgewichtszustände (engl. _Equilibria_)
+  - Stabil (System verbleibt in der Nähe / Strebt zurück wenn abglenkt)
+  - Nicht Stabil (System entfernt sich weiter, wenn abgelenkt)
+  - Grenzstabil (System bleibt in der Nähe, zB auf periodischer Bahn)
+
+== Steuerbarkeit / Beobachtbarkeit
+- Welche System Zustände können durch Eingänge beeinflusst werden?
+- Welche System Zustände können durch Ausgänge gemessen werden?
+
+Für *Lineare Systeme*: Kriterien, die (für Computer) leicht zu überprüfen sind (Kalman Matrix Rang kriterien)
+
 = Beobachter
 == Größen nicht zu messen: Was tun?
 Beispiele:
@@ -93,9 +111,9 @@ Beispiele:
   )]
 - KI integrität / sicherheit oft schwer zu garantieren (_"Dieser Flug wird mit einer wahrscheinlichkeit von 98% nicht abstürzen"_)
 
-  == Also doch Kontrolltheorie
-  - Kontrolltheorie über vernetzte Systeme kann zu robustem KI Design beitragen
-  -
+== Also doch Kontrolltheorie
+- Kontrolltheorie über vernetzte Systeme kann zu robustem KI Design beitragen
+- KI braucht riesige Datenmengen für Training, Kontrolltheorie kann helfen, Daten effizienter zu nutzen (Bsp. Individuelle Krebsbehandlung @rantzeretalconvexcancer)
 
 
 
@@ -110,6 +128,7 @@ Beispiele:
 = Weitführende Inhalte
 == Wo kann ich mehr dazu finden?
 - Einstiegsthema: Lineare Kontrolltheorie / linear control
+- Vorlesung Uni Washington: *Linear Systems (UW ME 547)*,  https://faculty.washington.edu/chx/teaching/me547/
 - Youtube Video Serie *Control Systems in Practice*, Mathworks: https://youtu.be/ApMz1-MK9IQ?si=CdSrJPCsdLwsGXnT
 - Podcast *inControl*, Roberto Padoan, Interviews mit führenden Experten über deren jeweiliges Spezialgebiet: https://www.incontrolpodcast.com/
 
