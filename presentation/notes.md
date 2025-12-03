@@ -80,3 +80,9 @@ combining 2 PID controllers rather uncomfortable, look to state feedback
 
 ### Control structure
 
+
+
+# Sources
+Unrobustheit von NN:
+- Adversarial Examples Are Not Bugs, They Are Features
+Andrew Ilyas, Shibani Santurkar, Dimitris Tsipras, Logan Engstrom, Brandon Tran, Aleksander Madry
