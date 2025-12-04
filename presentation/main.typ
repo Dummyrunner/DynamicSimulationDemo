@@ -12,7 +12,7 @@
     title: [Kybernetik: Was ist das und was soll das?],
     // Alternativ: Ein Tick Kybernetik
     subtitle: [Dynamische Systeme beeinflussen],
-    author: [Daniel],
+    author: [Dani],
     date: wissen_ist_nacht_datum,
     institution: [Finsterberg Akademie, Zamonien],
     // Disable automatic insertion of the outline slide before each section
@@ -21,16 +21,52 @@
 )
 
 #title-slide()
-= Einleitung
-== Fancy Bilder
-Inhalt der fancy bilder folie
-
-
-
 #outline-slide()
 
-= Dynamische Systeme
+= Einleitung
+== Was ist Kybernetik?
+Was ist Kybernetik? Einfach mal googeln:
+#pause
+#grid(
+  columns: (2fr, 2fr),
+  gutter: 15pt,
+  figure(
+    image("images/CyberneticsSearch/SystemFamilie.png", width: 100%),
+    caption: [https://o.quizlet.com/HPMRT3dpudKi1Ua3AOXmaw.png],
+  ),
+  figure(
+    image("images/CyberneticsSearch/Kybernetik-definition-datascientest-orange-robot.jpg", width: 100%),
+    caption: [https://datascientest.com/de/kybernetik-alles-wissen],
+  ),
 
+  figure(
+    image("images/CyberneticsSearch/KybUniStuttgart.jpg", width: 100%),
+    caption: [https://studieren.de/technische-kybernetik-uni-stuttgart.studienprofil.t-0.a-456.c-34710.html],
+  ),
+  figure(
+    image("images/CyberneticsSearch/KunstKybernetik.jpg", width: 100%),
+    caption: [https://pictures.abebooks.com/inventory/30771070339.jpg],
+  ),
+
+  figure(
+    image("images/CyberneticsSearch/kybhand.jpg", width: 60%),
+    caption: [https://www.gkm.uni-stuttgart.de/techkyb/.content/img/kybhand.jpg?__scale=w:220,h:220,cx:0,cy:0,cw:2000,ch:2000],
+  ),
+  text[Ok das war noch nicht sehr hilfreich!],
+)
+
+== Kybernetik: Definition
+_Die Kybernetik ist die Wissenschaft von Kontrolle und Information, gleichgültig, ob es
+sich über lebendige Wesen oder Maschinen handelt_
+-- Norbert Wiener
+
+
+Schwerpunkt des heutigen Vortrags:
+- Steuerung und Regelung technischer Systeme
+- Ausblick zu verschiedenen Methoden und Herausforderungen in der Kybernetik
+
+
+= Dynamische Systeme
 == Was ist ein dynamisches System?
 Schlauer Satz
 - Beispiel 1
@@ -86,11 +122,8 @@ Beispiele:
     body,
   )
 ]
-#pause
 #leftmessage[hi lol]
-#pause
 #rightmessage[was geht ab?]
-#pause
 #leftmessage[I bims]
 
 = Relevanz / Zukunft
@@ -131,6 +164,31 @@ Beispiele:
 - Vorlesung Uni Washington: *Linear Systems (UW ME 547)*,  https://faculty.washington.edu/chx/teaching/me547/
 - Youtube Video Serie *Control Systems in Practice*, Mathworks: https://youtu.be/ApMz1-MK9IQ?si=CdSrJPCsdLwsGXnT
 - Podcast *inControl*, Roberto Padoan, Interviews mit führenden Experten über deren jeweiliges Spezialgebiet: https://www.incontrolpodcast.com/
+
+= Playground
+== Two-Column Slide (2/3 - 1/3 split)
+#slide(composer: (2fr, 1fr))[
+  == Left Column (2/3 width)
+
+  This is the main content area that takes up approximately 66% of the slide width.
+
+  #image("images/CyberneticsSearch/KunstKybernetik.jpg", width: 80%)
+
+  You can include detailed explanations, code examples, or large images here.
+][
+  == Right Column (1/3 width)
+
+  This sidebar takes up about 33% of the slide width.
+
+  - Note 1
+  - Note 2
+  - Note 3
+
+  Perfect for:
+  - Supporting points
+  - Definitions
+  - Quick references
+]
 
 == Quellen
 #bibliography("sources.bib")
