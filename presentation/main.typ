@@ -6,6 +6,26 @@
   month: 12,
   day: 27,
 )
+
+#let two-column-slide(
+  left-content: [],
+  right-content: [],
+  right-text-color: black.lighten(30%),
+  separator-color: black,
+  separator-width: 1pt,
+) = {
+  slide(composer: (2fr, 1fr))[
+    #box(width: 100%, height: 90%, stroke: (right: separator-width + separator-color))[
+      #left-content
+    ]
+  ][
+    #text(fill: right-text-color)[
+      #right-content
+    ]
+  ]
+}
+
+
 // Specify `lang` and `font` for the theme if needed.
 #show: buaa-theme.with(
   config-info(
@@ -50,7 +70,7 @@ Was ist Kybernetik? Einfach mal googeln:
 
   figure(
     image("images/CyberneticsSearch/kybhand.jpg", width: 60%),
-    caption: [https://www.gkm.uni-stuttgart.de/techkyb/.content/img/kybhand.jpg?__scale=w:220,h:220,cx:0,cy:0,cw:2000,ch:2000],
+    caption: [https://www.gkm.uni-stuttgart.de/techkyb/.content/img/kybhand.jpg],
   ),
   text[Ok das war noch nicht sehr hilfreich!],
 )
@@ -86,13 +106,27 @@ Schlauer Satz
 ]
 
 == Linearität
-*Superposition:*
-_2 Signale addieren und in das System einspeisen = Beide signale jeweils einzeln ins System einspeisen und die Ergebnisse addieren_
-#image("images/superposition.png", height: 60%)
+#two-column-slide(
+  left-content: [
+    *Superposition:*
+    _2 Signale addieren und in das System einspeisen = Beide Signale jeweils einzeln ins System einspeisen und die Ergebnisse addieren_
+    #image("images/superposition.png", height: 60%)
+  ],
+  right-content: [
+    $G(x + y) = G(x) + G(y) \ #text("für alle input signale ") x,y$
+  ],
+)
+
 == Linearität
-*Homogenität:*
-_Ein Signal mit einem Faktor multiplizieren und in das System einspeisen = Das Ergebnis des aus dem System mit dem Faktor multiplizieren_
-#image("images/homogenity.png", height: 60%)
+#two-column-slide(
+  left-content: [
+    *Homogenität:*
+    _Ein Signal mit einem Faktor multiplizieren und in das System einspeisen = Das Signal ins System einspeisen und das Ergebnis mit dem Faktor multiplizieren_
+    #image("images/homogenity.png", width: 80%)],
+  right-content: [
+    $G(a dot x) = a dot G(x) \ #text("für alle input signale") x \ #text("und Skalare") a$
+  ],
+)
 
 == Stabilität
 - Gleichgewichtszustände (engl. _Equilibria_)
