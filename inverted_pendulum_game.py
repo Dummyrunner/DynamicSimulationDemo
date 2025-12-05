@@ -184,10 +184,11 @@ class Game:
             self.simulation_time += SAMPLE_TIME
 
         # Save final plot to file
-        self.data_plotter.save("inverted_pendulum_simulation_final.png")
-        print(
-            "Simulation ended. Final plot saved to inverted_pendulum_simulation_final.png"
-        )
+        if self.data_plotter.live_update_active:
+            self.data_plotter.save("inverted_pendulum_simulation_final.png")
+            print(
+                "Simulation ended. Final plot saved to inverted_pendulum_simulation_final.png"
+            )
 
         pygame.quit()
         sys.exit()
