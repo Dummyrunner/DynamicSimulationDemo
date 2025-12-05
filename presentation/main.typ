@@ -23,7 +23,7 @@
 #title-slide()
 #outline-slide()
 
-= Einleitung
+= Um was geht es?
 == Was ist Kybernetik?
 Was ist Kybernetik? Einfach mal googeln:
 #pause
@@ -61,10 +61,15 @@ sich über lebendige Wesen oder Maschinen handelt_
 -- Norbert Wiener
 
 
+== Dieser Vortrag
 Schwerpunkt des heutigen Vortrags:
 - Steuerung und Regelung technischer Systeme
 - Ausblick zu verschiedenen Methoden und Herausforderungen in der Kybernetik
 
+
+- Kybernetik ist eine sehr Mathematiklastige Disziplin:\
+  Versuch, hier ohne Formeln Fachwissen auszukommen
+- Für Fans und Experten: Manchmal Formel-Areal auf der rechten Seite
 
 = Dynamische Systeme
 == Was ist ein dynamisches System?
@@ -74,9 +79,20 @@ Schlauer Satz
 
 = Systemanalyse
 == Linearität
-Was bedeutet, ein System ist *linear*?
-- Superpositionsprinzip
-TODO Anschauliche Erklärung
+#tblock(title: "Definition")[
+  Ein System ist *linear*, wenn es die folgenden 2 Eigenschaften erfüllt:
+  + *Superposition*
+  + *Homogenität*
+]
+
+== Linearität
+*Superposition:*
+_2 Signale addieren und in das System einspeisen = Beide signale jeweils einzeln ins System einspeisen und die Ergebnisse addieren_
+#image("images/superposition.png", height: 60%)
+== Linearität
+*Homogenität:*
+_Ein Signal mit einem Faktor multiplizieren und in das System einspeisen = Das Ergebnis des aus dem System mit dem Faktor multiplizieren_
+#image("images/homogenity.png", height: 60%)
 
 == Stabilität
 - Gleichgewichtszustände (engl. _Equilibria_)
@@ -137,26 +153,19 @@ Beispiele:
 
 == Jetzt haben wir KI: Brauchen wir noch Kontrolltheorie?
 - Machine Learning / LLM Modelle sind oft "Black Boxen"
-- KI Algorithmen sind oft sehr *unrobust* gegenüber Störungen @ilyas2019adversarialexamplesbugsfeatures
+- KI Algorithmen sind oft sehr *unrobust* gegenüber Störungen. Beispiel: Bilderkennung @ilyas2019adversarialexamplesbugsfeatures
   #align(center)[#figure(
     image("images/adversarial_example_dog_to_cat.png", width: 30%),
     caption: [Kleine Störung, große Wirkung, von: https://gradientscience.org/adv/],
   )]
-- KI integrität / sicherheit oft schwer zu garantieren (_"Dieser Flug wird mit einer wahrscheinlichkeit von 98% nicht abstürzen"_)
+- KI integrität / Sicherheit oft schwer zu garantieren (_"Dieser Flug wird mit einer wahrscheinlichkeit von 98% nicht abstürzen"_)
 
 == Also doch Kontrolltheorie
 - Kontrolltheorie über vernetzte Systeme kann zu robustem KI Design beitragen
 - KI braucht riesige Datenmengen für Training, Kontrolltheorie kann helfen, Daten effizienter zu nutzen (Bsp. Individuelle Krebsbehandlung @rantzeretalconvexcancer)
-
-
-
-
-
-== Zukunftsvisionen: John Doyle
-- Systemarchitekturen auf vielen Ebenen
-- Robustheit fehlt in heutigen Systemen oft
-
-
+  - Medikation muss individuell auf jeden Patienten angepasst werden
+  - Unmöglich, für jeden Patienten riesige Datenmengen zu sammeln
+  - Kontrolltheoretische Methoden der Konvexen Optimierung können helfen, verbesserte Behandlungsstrategien zu finden
 
 = Weitführende Inhalte
 == Wo kann ich mehr dazu finden?
@@ -167,6 +176,7 @@ Beispiele:
 
 = Playground
 == Two-Column Slide (2/3 - 1/3 split)
+
 #slide(composer: (2fr, 1fr))[
   == Left Column (2/3 width)
 
@@ -178,17 +188,20 @@ Beispiele:
 ][
   == Right Column (1/3 width)
 
-  This sidebar takes up about 33% of the slide width.
+  #text(fill: gray)[
 
-  - Note 1
-  - Note 2
-  - Note 3
-
-  Perfect for:
-  - Supporting points
-  - Definitions
-  - Quick references
+    Linear System: \
+    $dot(x) = A x + B u \ y = C x$
+  ]
 ]
 
 == Quellen
 #bibliography("sources.bib")
+== Software
+- python
+- pymunk
+- pygame
+- python.control
+- Präsentation: typst
+
+- programmcode: github.....
