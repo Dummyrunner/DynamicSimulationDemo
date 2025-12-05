@@ -49,7 +49,7 @@ class DynamicRunner(GameObject):
 
 
 class Ball(GameObject):
-    def __init__(self, space, position, mass=90, radius=15):
+    def __init__(self, space, position, mass, radius=15):
         super().__init__(space)
         self.radius = radius
         self.color = (150, 0, 200)

@@ -1,11 +1,11 @@
 import pygame
 import pymunk
-import pymunk.pygame_util
 from pymunk import Vec2d
 from typing import NamedTuple
 from abc import ABC, abstractmethod
 from physical_objects import PinJointConnection, Ball, DynamicRunner
 import math_helpers
+from dataclasses import dataclass
 
 
 class InvertedPendulumOutput(NamedTuple):
@@ -96,22 +96,32 @@ class PlantBase(ABC):
         pass
 
 
-class InvertedPendulumPlant(PlantBase):
-    class Constants:
-        RUNNER_SPEED: int = 300
-        RUNNER_MAX_SPEED: int = 1200
-        RUNNER_WIDTH: int = 100
-        RUNNER_HEIGHT: int = 20
-        RUNNER_MASS: float = 10000
-        FORCE_SCALE: float = 1e7
-        GRAVITY: Vec2d = Vec2d(0, 9.81)
+@dataclass
+class DefaultModelParams:
+    RUNNER_MAX_SPEED: int = 1200
+    RUNNER_WIDTH: int = 100
+    RUNNER_HEIGHT: int = 20
+    RUNNER_MASS: float = 10000
+    BALL_MASS: float = 90
+    FORCE_SCALE: float = 1e7
+    GRAVITY: Vec2d = Vec2d(0, 9.81)
+    PENDULUM_LENGTH: float = 200
 
-    def __init__(self, space: pymunk.Space, window_size: tuple, sample_time: float):
+
+class InvertedPendulumPlant(PlantBase):
+    def __init__(
+        self,
+        space: pymunk.Space,
+        window_size: tuple,
+        sample_time: float,
+        model_params=DefaultModelParams,
+    ):
         super().__init__(sample_time=sample_time)
         self.space: pymunk.Space = space
         self.n_inputs: int = 1
         self.n_outputs: int = 4
-        self.space.gravity = InvertedPendulumPlant.Constants.GRAVITY
+        self.model_params = model_params
+        self.space.gravity = self.model_params.GRAVITY
         self.non_physical_objects = []
         self.control_active = True
         self._create_objects(window_size, space)
@@ -173,9 +183,9 @@ class InvertedPendulumPlant(PlantBase):
         # Get current state
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
-            return -InvertedPendulumPlant.Constants.FORCE_SCALE
+            return -self.model_params.FORCE_SCALE
         elif keys[pygame.K_RIGHT]:
-            return InvertedPendulumPlant.Constants.FORCE_SCALE
+            return self.model_params.FORCE_SCALE
         else:
             return 0.0
 
@@ -203,15 +213,19 @@ class InvertedPendulumPlant(PlantBase):
         self.runner = DynamicRunner(
             self.space,
             center_pos,
-            InvertedPendulumPlant.Constants.RUNNER_WIDTH,
-            InvertedPendulumPlant.Constants.RUNNER_HEIGHT,
+            self.model_params.RUNNER_WIDTH,
+            self.model_params.RUNNER_HEIGHT,
         )
-        self.ball = Ball(self.space, (window_width // 2, window_height * 0.3))
+        self.ball = Ball(
+            self.space,
+            (window_width // 2, window_height * 0.3),
+            self.model_params.BALL_MASS,
+        )
 
         # Create pin joint connection (bottom center of runner to center of ball)
         runner_anchor = (
             0,
-            -InvertedPendulumPlant.Constants.RUNNER_HEIGHT / 2,
+            -self.model_params.RUNNER_HEIGHT / 2,
         )  # Relative to runner's center
         ball_anchor = (0, 0)  # Center of the ball
         self.pin_joint = PinJointConnection(
