@@ -199,7 +199,7 @@ Beispiele:
 - KI braucht riesige Datenmengen für Training, Kontrolltheorie kann helfen, Daten effizienter zu nutzen (Bsp. Individuelle Krebsbehandlung @rantzeretalconvexcancer)
   - Medikation muss individuell auf jeden Patienten angepasst werden
   - Unmöglich, für jeden Patienten riesige Datenmengen zu sammeln
-  - Kontrolltheoretische Methoden der Konvexen Optimierung können helfen, verbesserte Behandlungsstrategien zu finden
+  - Kontrolltheoretische Methoden der Konvexen Optimierung @Boyd_Vandenberghe_2004_ConvexOptimization können helfen, verbesserte Behandlungsstrategien zu finden
 
 = Weitführende Inhalte
 == Wo kann ich mehr dazu finden?
