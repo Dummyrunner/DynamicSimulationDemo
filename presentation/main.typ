@@ -25,6 +25,10 @@
   ]
 }
 
+#let linear_state_space_system(A, B, C) = {
+  $dot(x) = A x + B u \ y = C x$
+}
+
 
 // Specify `lang` and `font` for the theme if needed.
 #show: buaa-theme.with(
@@ -157,24 +161,43 @@ Beispiele:
 == Beobachter: Anschauliche Erklärung als Dialog
 #let leftmessage(body) = align(left)[
   #block(
-    width: 60%,
-    inset: 10pt,
+    width: 65%,
+    inset: 5pt,
     fill: gray.lighten(80%),
-    body,
+    text(size: 0.75em, body),
+  )
+]
+#let rightmessage(body) = align(right)[
+  #block(
+    width: 65%,
+    inset: 5pt,
+    fill: blue.lighten(80%),
+    text(size: 0.75em, body),
   )
 ]
 
-#let rightmessage(body) = align(right)[
-  #block(
-    width: 60%,
-    inset: 10pt,
-    fill: blue.lighten(80%),
-    body,
-  )
-]
-#leftmessage[hi lol]
-#rightmessage[was geht ab?]
-#leftmessage[I bims]
+#two-column-slide(
+  left-content: [
+    #rightmessage[Was ist die Düsentemperatour?]
+    #leftmessage[Ich rate mal: 1500 °C]
+    #rightmessage[Angenommen, das würde Stimmen, was wäre dann der Ausgangswert des Systems?]
+    #leftmessage[Das wäre dann 500 000 N]
+    #rightmessage[Der Echte Ausgangswert ist aber nur 450 000 N]
+    #leftmessage[Ok, aus dem Unterschied (50 000N) berechne ich eine Korrektur]
+    #leftmessage[Wenn ich berechne, was mittlerweile passiert sein muss, komme ich auf eine Düsentemperatur von 1450 °C. Das würde einen Ausgangswert von 473 000 N ergeben]
+    #rightmessage[Der echte Ausgangswert liegt momentan bei 460 000 N. Deine Schäatzung wurde also schon  besser]
+    #leftmessage[Ok, ich korrigiere die Schätzung durch eine Weitere Korrektur]
+
+  ],
+  right-content: [Lineares System:\ $dot(x) = A x + B u \ y = C x + D u$ \
+    Beobachter-Simulator:
+    $dot(hat(x)) = A hat(x) + B u \ hat(y) = C hat(x) + D u$ \
+    Abgleich, wie gut die Schätzung ist:
+    $abs(hat(y) - y) = 0?$ \
+    Führe Korrektur ein: \
+    $dot(hat(x)) = A hat(x) + B u + L (y - hat(y))$ \ Mit L so gewählt, dass die Fehlerdynamik  $dot(e) = dot(y) - dot(hat(y))$ stabile Eigenwerte hat],
+)
+
 
 = Relevanz / Zukunft
 == Jetzt haben wir KI: Brauchen wir noch Kontrolltheorie?
@@ -192,7 +215,7 @@ Beispiele:
     image("images/adversarial_example_dog_to_cat.png", width: 30%),
     caption: [Kleine Störung, große Wirkung, von: https://gradientscience.org/adv/],
   )]
-- KI integrität / Sicherheit oft schwer zu garantieren (_"Dieser Flug wird mit einer wahrscheinlichkeit von 98% nicht abstürzen"_)
+- KI integrität / Sicherheit oft schwer zu garantieren (_"Dieser Flug wird mit einer Wahrscheinlichkeit von 98% nicht abstürzen"_)
 
 == Also doch Kontrolltheorie
 - Kontrolltheorie über vernetzte Systeme kann zu robustem KI Design beitragen
