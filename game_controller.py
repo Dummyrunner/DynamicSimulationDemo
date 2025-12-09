@@ -65,19 +65,15 @@ class CraneControllerPID(GameControllerBase):
 
 
 class StateFeedbackController(GameControllerBase):
-    def __init__(self, gain_matrix):
+    def __init__(self, gain_matrix, sample_time: float):
         super().__init__()
+        self.sample_time = sample_time
         self.gain_matrix = gain_matrix
 
     def get_control_input(self, state_vector):
         # convert name tuple to numpy array if needed
         if not isinstance(state_vector, np.ndarray):
             state_vector = np.array(state_vector)
-        # check dimensions
-        if state_vector.shape[0] != self.gain_matrix.shape[1]:
-            raise ValueError(
-                f"State vector dimension {state_vector.shape[0]} does not match gain matrix columns {self.gain_matrix.shape[1]}"
-            )
         control_signal = -self.gain_matrix @ state_vector
         return control_signal
 
