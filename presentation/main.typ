@@ -7,6 +7,16 @@
   day: 27,
 )
 
+#let todo = block(
+  width: 80%,
+  inset: 10pt,
+  fill: red.lighten(50%),
+  text(size: 1.2em)[
+    TODO
+  ],
+)
+
+
 #let two-column-slide(
   left-content: [],
   right-content: [],
@@ -85,21 +95,29 @@ sich über lebendige Wesen oder Maschinen handelt_
 -- Norbert Wiener
 
 
-== Dieser Vortrag
+== Dieser Vortrag: Thema
 Schwerpunkt des heutigen Vortrags:
 - Steuerung und Regelung technischer Systeme
 - Ausblick zu verschiedenen Methoden und Herausforderungen in der Kybernetik
 
+== Dieser Vortrag: Darreichungsform
+#two-column-slide(
+  left-content: [
+    - Kybernetik ist eine sehr mathematiklastige Disziplin
+      - Um die gezeigten Zusammenhänge mathematisch präzise darzustellen, ist viel Vorwissen nötig
+      - Hier werden die Zusammenhänge und Ideen intuitiv, ohne mathematische Grundvorraussetzungen dargestellt
+      - _Rechte Spalte: Mathematische Darstellungen für fans, *nicht* nötig fürs Verständnis_
+  ],
+  right-content: [Beispiel:\
+    $cal(L){f(t)} = integral_0^infinity f(t) e^(-s t) dif t$ \
+    Unnötige mathematische Ausführungen für unangenehme Besserwisser],
+)
 
-- Kybernetik ist eine sehr Mathematiklastige Disziplin:\
-  Versuch, hier ohne Formeln Fachwissen auszukommen
-- Für Fans und Experten: Manchmal Formel-Areal auf der rechten Seite
+// - Für Fans und Experten: Manchmal Formel-Areal auf der rechten Seite
 
 = Dynamische Systeme
 == Was ist ein dynamisches System?
-Schlauer Satz
-- Beispiel 1
-- Beispiel 2
+#todo
 
 = Systemanalyse
 == Linearität
@@ -128,7 +146,7 @@ Schlauer Satz
     _Ein Signal mit einem Faktor multiplizieren und in das System einspeisen = Das Signal ins System einspeisen und das Ergebnis mit dem Faktor multiplizieren_
     #image("images/homogenity.png", width: 80%)],
   right-content: [
-    $G(a dot x) = a dot G(x) \ #text("für alle input signale") x \ #text("und Skalare") a$
+    $G(alpha dot x) = alpha dot G(x) \ #text("für alle input signale") x \ #text("und Skalare") a$
   ],
 )
 
@@ -246,7 +264,6 @@ Beispiele:
   == Right Column (1/3 width)
 
   #text(fill: gray)[
-
     Linear System: \
     $dot(x) = A x + B u \ y = C x$
   ]
