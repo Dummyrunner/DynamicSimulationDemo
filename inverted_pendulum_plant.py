@@ -104,7 +104,7 @@ class DefaultModelParams:
     RUNNER_MASS: float = 10000
     BALL_MASS: float = 90
     FORCE_SCALE: float = 1e7
-    GRAVITY: Vec2d = Vec2d(0, 9.81)
+    GRAVITY: Vec2d = Vec2d(0, 981)
     PENDULUM_LENGTH: float = 200
 
 
