@@ -2,7 +2,7 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 import sys
-from game_controller import CraneControllerPID
+from game_controller import CraneControllerPID, StateFeedbackController
 from inverted_pendulum_plant import (
     InvertedPendulumPlant,
     InvertedPendulumInput,
@@ -10,6 +10,7 @@ from inverted_pendulum_plant import (
 from data_plotter import DataPlotter
 from pygame_widgets.slider import Slider
 import pygame_widgets
+import numpy as np
 
 SAMPLE_TIME = 1 / 60.0
 INITIAL_KP = 3e7
@@ -44,8 +45,8 @@ class Game:
         self.plant = InvertedPendulumPlant(
             self.space, pygame.display.get_window_size(), SAMPLE_TIME
         )
-        self.controller = CraneControllerPID(
-            kp=INITIAL_KP, ki=INITIAL_KI, kd=INITIAL_KD, sample_time=SAMPLE_TIME
+        self.controller = StateFeedbackController(
+            gain_matrix=np.array([1, 1, 1, 1]), sample_time=SAMPLE_TIME
         )
         # Create visual-only objects list (will be populated in setup_objects)
         self.non_physical_objects = []
@@ -151,11 +152,12 @@ class Game:
             # Update reference signals from slider
             self._update_reference_signal_from_slider()
 
-            control_error = self.reference_signal_angle - plant_state.joint_angle
+            # control_error = self.reference_signal_angle - plant_state.joint_angle
+            currents_state = self.plant.get_state()
             # Get key related velocity change
             input_signal_from_key = self.plant.input_from_key()
             force_from_control = (
-                self.controller.get_control_input(control_error)
+                self.controller.get_control_input(currents_state)
                 if self.control_active
                 else 0.0
             )
@@ -169,7 +171,7 @@ class Game:
 
             # Log data for plotting
             self.data_plotter.log_data(
-                control_error=control_error,
+                control_error=0,
                 runner_position_x=plant_state.runner_position_x,
                 runner_velocity_x=plant_state.runner_velocity_x,
                 joint_angle=plant_state.joint_angle,
