@@ -2,7 +2,7 @@ import numpy as np
 
 
 class InvertedPendlumModel:
-    @classmethod
+    @staticmethod
     def state_space_model_matrices(mass_cart, mass_pendulum, length_pendulum, gravity):
         """
         Create state space matricses for
@@ -17,9 +17,9 @@ class InvertedPendlumModel:
         """
         M = mass_cart
         m = mass_pendulum
-        l = length_pendulum
+        L = length_pendulum
         g = gravity
-
+        print(f"M: {M}\n, m: {m}, L: {L}, g: {g}")
         A = np.array(
             [
                 [0, 1, 0, 0],
@@ -28,12 +28,12 @@ class InvertedPendlumModel:
                 [
                     0,
                     0,
-                    (M + m) * g / (M * l),
+                    (M + m) * g / (M * L),
                     0,
                 ],
             ]
         )
-        B = (np.array[0, 1 / M, 0, 1 / (l * M)],)
-        C = np.array([[1, 0, 0, 0], [0, 1, 0, 0]])
-        D = np.zeros(4)
+        B = np.transpose(np.array([0, 1 / M, 0, 1 / (L * M)]))
+        C = np.array([[1, 0, 0, 0], [0, 0, 1, 0]])
+        D = np.array([[0], [0]])
         return (A, B, C, D)
