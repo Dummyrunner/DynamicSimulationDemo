@@ -98,10 +98,10 @@ class PlantBase(ABC):
 
 @dataclass
 class DefaultModelParams:
-    cart_MAX_SPEED: int = 1200
-    cart_WIDTH: int = 100
-    cart_HEIGHT: int = 20
-    cart_MASS: float = 10000
+    CART_MAX_SPEED: int = 1200
+    CART_WIDTH: int = 100
+    CART_HEIGHT: int = 20
+    CART_MASS: float = 10000
     BALL_MASS: float = 90
     FORCE_SCALE: float = 1e7
     GRAVITY: Vec2d = Vec2d(0, 981)
@@ -213,8 +213,8 @@ class InvertedPendulumPlant(PlantBase):
         self.cart = DynamicCart(
             self.space,
             center_pos,
-            self.model_params.cart_WIDTH,
-            self.model_params.cart_HEIGHT,
+            self.model_params.CART_WIDTH,
+            self.model_params.CART_HEIGHT,
         )
         pendulum_length = self.model_params.PENDULUM_LENGTH
         self.ball = Ball(
@@ -226,7 +226,7 @@ class InvertedPendulumPlant(PlantBase):
         # Create pin joint connection (bottom center of cart to center of ball)
         cart_anchor = (
             0,
-            -self.model_params.cart_HEIGHT / 2,
+            -self.model_params.CART_HEIGHT / 2,
         )  # Relative to cart's center
         ball_anchor = (0, 0)  # Center of the ball
         self.pin_joint = PinJointConnection(
