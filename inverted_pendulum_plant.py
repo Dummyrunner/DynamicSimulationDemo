@@ -3,7 +3,7 @@ import pymunk
 from pymunk import Vec2d
 from typing import NamedTuple
 from abc import ABC, abstractmethod
-from physical_objects import PinJointConnection, Ball, DynamicRunner
+from physical_objects import PinJointConnection, Ball, DynamicCart
 import math_helpers
 from dataclasses import dataclass
 
@@ -12,11 +12,11 @@ class InvertedPendulumOutput(NamedTuple):
     """Input type for the inverted pendulum plant containing control signals.
 
     Attributes:
-        x_velocity: Target horizontal velocity for the runner (scalar value in units/second)
+        x_velocity: Target horizontal velocity for the cart (scalar value in units/second)
     """
 
-    runner_position_x: float
-    runner_velocity_x: float
+    cart_position_x: float
+    cart_velocity_x: float
     joint_angle: float
     joint_angular_velocity: float
 
@@ -25,7 +25,7 @@ class InvertedPendulumInput(NamedTuple):
     """Output type for the inverted pendulum plant containing velocity and angle information.
 
     Attributes:
-        x_velocity: Horizontal velocity of the runner
+        x_velocity: Horizontal velocity of the cart
         angle: Current angle of the pendulum in radians
         angular_velocity: Angular velocity of the pendulum in radians per second
     """
@@ -37,14 +37,14 @@ class InvertedPendulumState(NamedTuple):
     """State type for the crane plant containing positions and velocities.
 
     Attributes:
-        runner_position: Position of the runner as Vec2d
-        runner_velocity: Velocity of the runner as Vec2d
+        cart_position: Position of the cart as Vec2d
+        cart_velocity: Velocity of the cart as Vec2d
         ball_position: Position of the ball as Vec2d
         ball_velocity: Velocity of the ball as Vec2d
     """
 
-    runner_position_x: float
-    runner_velocity_x: float
+    cart_position_x: float
+    cart_velocity_x: float
     joint_angle: float
     joint_angular_velocity: float
 
@@ -98,10 +98,10 @@ class PlantBase(ABC):
 
 @dataclass
 class DefaultModelParams:
-    RUNNER_MAX_SPEED: int = 1200
-    RUNNER_WIDTH: int = 100
-    RUNNER_HEIGHT: int = 20
-    RUNNER_MASS: float = 10000
+    cart_MAX_SPEED: int = 1200
+    cart_WIDTH: int = 100
+    cart_HEIGHT: int = 20
+    cart_MASS: float = 10000
     BALL_MASS: float = 90
     FORCE_SCALE: float = 1e7
     GRAVITY: Vec2d = Vec2d(0, 981)
@@ -128,29 +128,29 @@ class InvertedPendulumPlant(PlantBase):
         self.input = InvertedPendulumInput(0.0)
         self.output = InvertedPendulumOutput(0.0, 0.0, 0.0, 0.0)
         self.state = InvertedPendulumState(
-            runner_position_x=0.0,
-            runner_velocity_x=0.0,
+            cart_position_x=0.0,
+            cart_velocity_x=0.0,
             joint_angle=0.0,
             joint_angular_velocity=0.0,
         )
 
     def step(self, time_delta):
-        # Adjustments according to input (runner velocity)
-        self.runner.body.apply_force_at_local_point((self.input.x_force, 0), (0, 0))
+        # Adjustments according to input (cart velocity)
+        self.cart.body.apply_force_at_local_point((self.input.x_force, 0), (0, 0))
         self.space.step(time_delta)
 
     def get_state(self) -> "InvertedPendulumState":
         angle = self._calculate_angle_radian(
-            self.runner.body.position, self.ball.body.position
+            self.cart.body.position, self.ball.body.position
         )
         angular_velocity = self._calculate_angle_velocity_radian_per_sec(
-            self.runner.body.position,
+            self.cart.body.position,
             self.ball.body.position,
             self.ball.body.velocity,
         )
         return InvertedPendulumState(
-            runner_position_x=float(self.runner.body.position.x),
-            runner_velocity_x=float(self.runner.body.velocity.x),
+            cart_position_x=float(self.cart.body.position.x),
+            cart_velocity_x=float(self.cart.body.velocity.x),
             joint_angle=angle,
             joint_angular_velocity=angular_velocity,
         )
@@ -158,8 +158,8 @@ class InvertedPendulumPlant(PlantBase):
     def get_output(self) -> "InvertedPendulumOutput":
         state = self.get_state()
         return InvertedPendulumOutput(
-            runner_position_x=state.runner_position_x,
-            runner_velocity_x=state.runner_velocity_x,
+            cart_position_x=state.cart_position_x,
+            cart_velocity_x=state.cart_velocity_x,
             joint_angle=state.joint_angle,
             joint_angular_velocity=state.joint_angular_velocity,
         )
@@ -169,7 +169,7 @@ class InvertedPendulumPlant(PlantBase):
 
     def draw(self, options, screen):
         # Draw game objects with their custom draw methods
-        self.runner.draw(screen)
+        self.cart.draw(screen)
         self.ball.draw(screen)
         self.pin_joint.draw(screen)
         self.rail.draw(screen)
@@ -210,11 +210,11 @@ class InvertedPendulumPlant(PlantBase):
         self.rail = rail
 
         # Create objects
-        self.runner = DynamicRunner(
+        self.cart = DynamicCart(
             self.space,
             center_pos,
-            self.model_params.RUNNER_WIDTH,
-            self.model_params.RUNNER_HEIGHT,
+            self.model_params.cart_WIDTH,
+            self.model_params.cart_HEIGHT,
         )
         pendulum_length = self.model_params.PENDULUM_LENGTH
         self.ball = Ball(
@@ -223,39 +223,39 @@ class InvertedPendulumPlant(PlantBase):
             self.model_params.BALL_MASS,
         )
 
-        # Create pin joint connection (bottom center of runner to center of ball)
-        runner_anchor = (
+        # Create pin joint connection (bottom center of cart to center of ball)
+        cart_anchor = (
             0,
-            -self.model_params.RUNNER_HEIGHT / 2,
-        )  # Relative to runner's center
+            -self.model_params.cart_HEIGHT / 2,
+        )  # Relative to cart's center
         ball_anchor = (0, 0)  # Center of the ball
         self.pin_joint = PinJointConnection(
-            space, self.runner.body, self.ball.body, runner_anchor, ball_anchor
+            space, self.cart.body, self.ball.body, cart_anchor, ball_anchor
         )
 
-        # Constraint runner movement between bar ends by inducing a groove joint
+        # Constraint cart movement between bar ends by inducing a groove joint
         groove_left = (bar_left_x, bar_left_y)
         groove_right = (bar_right_x, bar_right_y)
 
         self.groove_joint = pymunk.GrooveJoint(
-            space.static_body, self.runner.body, groove_left, groove_right, (0, 0)
+            space.static_body, self.cart.body, groove_left, groove_right, (0, 0)
         )
         # Keep physical objects (include connection for drawing)
-        self.all_physical_objects = [self.runner, self.ball, self.pin_joint, self.rail]
+        self.all_physical_objects = [self.cart, self.ball, self.pin_joint, self.rail]
         space.add(self.groove_joint)
 
-    def _calculate_angle_radian(self, runner_position, ball_position):
-        # Calculate vector from runner to ball
-        rope_vec = ball_position - runner_position
+    def _calculate_angle_radian(self, cart_position, ball_position):
+        # Calculate vector from cart to ball
+        rope_vec = ball_position - cart_position
         vertical_up = Vec2d(0, -1)
         return math_helpers.angle_between_vectors_radian(rope_vec, vertical_up)
 
     def _calculate_angle_velocity_radian_per_sec(
-        self, runner_position, ball_position, ball_velocity
+        self, cart_position, ball_position, ball_velocity
     ):
-        # Calculate vector from runner to ball
-        dx = ball_position.x - runner_position.x
-        dy = ball_position.y - runner_position.y
+        # Calculate vector from cart to ball
+        dx = ball_position.x - cart_position.x
+        dy = ball_position.y - cart_position.y
 
         # Position vector
         pos_vector = pygame.math.Vector2(dx, dy)

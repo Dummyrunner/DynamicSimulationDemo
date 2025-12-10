@@ -9,7 +9,7 @@ class GameObject:
         self.shape = None
 
 
-class DynamicRunner(GameObject):
+class DynamicCart(GameObject):
     def __init__(self, space, position, width=100, height=20):
         super().__init__(space)
         self.width = width
@@ -39,7 +39,7 @@ class DynamicRunner(GameObject):
         space.add(self.body, self.shape)
 
     def draw(self, surface):
-        """Draw the runner using pygame directly."""
+        """Draw the cart using pygame directly."""
         # Calculate the rectangle position (top-left corner)
         pos_x = self.body.position.x - self.width / 2
         pos_y = self.body.position.y - self.height / 2

@@ -172,8 +172,8 @@ class Game:
             # Log data for plotting
             self.data_plotter.log_data(
                 control_error=0,
-                runner_position_x=plant_state.runner_position_x,
-                runner_velocity_x=plant_state.runner_velocity_x,
+                cart_position_x=plant_state.cart_position_x,
+                cart_velocity_x=plant_state.cart_velocity_x,
                 joint_angle=plant_state.joint_angle,
                 joint_angular_velocity=plant_state.joint_angular_velocity,
                 time_delta=SAMPLE_TIME,

@@ -87,23 +87,23 @@ class StateFeedbackController(GameControllerBase):
 #     if control_signal == (0, 0):
 #         return
 
-#     # Get runner's center position
-#     runner_pos = self.runner.body.position
+#     # Get cart's center position
+#     cart_pos = self.cart.body.position
 
 #     # Scale factor to make arrow visible (adjust this value to change arrow length)
 #     scale = 5  # Increased scale to make arrow more visible
 
 #     # Calculate arrow end point
 #     arrow_end = (
-#         runner_pos.x + control_signal[0] * scale,
-#         runner_pos.y + control_signal[1] * scale,
+#         cart_pos.x + control_signal[0] * scale,
+#         cart_pos.y + control_signal[1] * scale,
 #     )
 
 #     # Draw main line of arrow
 #     pygame.draw.line(
 #         self.screen,
 #         (255, 0, 0),  # Red color
-#         (runner_pos.x, runner_pos.y),
+#         (cart_pos.x, cart_pos.y),
 #         arrow_end,
 #         2,  # Line thickness
 #     )

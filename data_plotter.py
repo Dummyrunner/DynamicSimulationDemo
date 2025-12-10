@@ -9,8 +9,8 @@ class PlotData(NamedTuple):
 
     time: list
     control_error: list
-    runner_position_x: list
-    runner_velocity_x: list
+    cart_position_x: list
+    cart_velocity_x: list
     joint_angle: list
     joint_angular_velocity: list
 
@@ -30,8 +30,8 @@ class DataPlotter:
         self.update_interval = update_interval
         self.time_buffer = deque(maxlen=max_points)
         self.control_error_buffer = deque(maxlen=max_points)
-        self.runner_position_x_buffer = deque(maxlen=max_points)
-        self.runner_velocity_x_buffer = deque(maxlen=max_points)
+        self.cart_position_x_buffer = deque(maxlen=max_points)
+        self.cart_velocity_x_buffer = deque(maxlen=max_points)
         self.joint_angle_buffer = deque(maxlen=max_points)
         self.joint_angular_velocity_buffer = deque(maxlen=max_points)
         self.simulation_time = 0.0
@@ -46,8 +46,8 @@ class DataPlotter:
     def log_data(
         self,
         control_error: float,
-        runner_position_x: float,
-        runner_velocity_x: float,
+        cart_position_x: float,
+        cart_velocity_x: float,
         joint_angle: float,
         joint_angular_velocity: float,
         time_delta: float,
@@ -57,8 +57,8 @@ class DataPlotter:
 
         Args:
             control_error: Error between reference and actual angle
-            runner_position_x: X position of the runner
-            runner_velocity_x: X velocity of the runner
+            cart_position_x: X position of the cart
+            cart_velocity_x: X velocity of the cart
             joint_angle: Angle of the joint in radians
             joint_angular_velocity: Angular velocity of the joint in rad/s
             time_delta: Time step delta
@@ -66,8 +66,8 @@ class DataPlotter:
         self.simulation_time += time_delta
         self.time_buffer.append(self.simulation_time)
         self.control_error_buffer.append(control_error)
-        self.runner_position_x_buffer.append(runner_position_x)
-        self.runner_velocity_x_buffer.append(runner_velocity_x)
+        self.cart_position_x_buffer.append(cart_position_x)
+        self.cart_velocity_x_buffer.append(cart_velocity_x)
         self.joint_angle_buffer.append(joint_angle)
         self.joint_angular_velocity_buffer.append(joint_angular_velocity)
 
@@ -81,8 +81,8 @@ class DataPlotter:
         return PlotData(
             time=list(self.time_buffer),
             control_error=list(self.control_error_buffer),
-            runner_position_x=list(self.runner_position_x_buffer),
-            runner_velocity_x=list(self.runner_velocity_x_buffer),
+            cart_position_x=list(self.cart_position_x_buffer),
+            cart_velocity_x=list(self.cart_velocity_x_buffer),
             joint_angle=list(self.joint_angle_buffer),
             joint_angular_velocity=list(self.joint_angular_velocity_buffer),
         )
@@ -102,8 +102,8 @@ class DataPlotter:
         titles = [
             "Control Error",
             "Joint Angle",
-            "Runner Position X",
-            "Runner Velocity X",
+            "cart Position X",
+            "cart Velocity X",
             "Joint Angular Velocity",
             "All States (Normalized)",
         ]
@@ -130,7 +130,7 @@ class DataPlotter:
             else:
                 # Combined plot has 3 lines
                 colors = ["red", "blue", "green"]
-                labels = ["Control Error", "Joint Angle", "Runner Position"]
+                labels = ["Control Error", "Joint Angle", "cart Position"]
                 lines = []
                 for color, label in zip(colors, labels):
                     (line,) = ax.plot([], [], lw=1.5, color=color, label=label)
@@ -174,8 +174,8 @@ class DataPlotter:
         plot_configs = [
             ("Control Error", [data.control_error]),
             ("Joint Angle", [data.joint_angle]),
-            ("Runner Position X", [data.runner_position_x]),
-            ("Runner Velocity X", [data.runner_velocity_x]),
+            ("cart Position X", [data.cart_position_x]),
+            ("cart Velocity X", [data.cart_velocity_x]),
             ("Joint Angular Velocity", [data.joint_angular_velocity]),
         ]
 
@@ -202,7 +202,7 @@ class DataPlotter:
         combined_data = [
             normalize(data.control_error),
             normalize(data.joint_angle),
-            normalize(data.runner_position_x),
+            normalize(data.cart_position_x),
         ]
 
         ax = self.axes["All States (Normalized)"]
@@ -237,8 +237,8 @@ class DataPlotter:
         """Clear all logged data."""
         self.time_buffer.clear()
         self.control_error_buffer.clear()
-        self.runner_position_x_buffer.clear()
-        self.runner_velocity_x_buffer.clear()
+        self.cart_position_x_buffer.clear()
+        self.cart_velocity_x_buffer.clear()
         self.joint_angle_buffer.clear()
         self.joint_angular_velocity_buffer.clear()
         self.simulation_time = 0.0
