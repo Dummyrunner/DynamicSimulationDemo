@@ -105,7 +105,7 @@ class DefaultModelParams:
     BALL_MASS: float = 90
     FORCE_SCALE: float = 1e7
     GRAVITY: Vec2d = Vec2d(0, 981)
-    PENDULUM_LENGTH: float = 200
+    PENDULUM_LENGTH: float = 280
 
 
 class InvertedPendulumPlant(PlantBase):
@@ -216,9 +216,10 @@ class InvertedPendulumPlant(PlantBase):
             self.model_params.RUNNER_WIDTH,
             self.model_params.RUNNER_HEIGHT,
         )
+        pendulum_length = self.model_params.PENDULUM_LENGTH
         self.ball = Ball(
             self.space,
-            (window_width // 2, window_height * 0.3),
+            (center_pos[0], center_pos[1] - pendulum_length),
             self.model_params.BALL_MASS,
         )
 
