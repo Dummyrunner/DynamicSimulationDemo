@@ -19,7 +19,7 @@ class InvertedPendlumModel:
         m = mass_pendulum
         L = length_pendulum
         g = gravity
-        print(f"M: {M}\n, m: {m}, L: {L}, g: {g}")
+        print(f"M: {M}, m: {m}, L: {L}, g: {g}")
         A = np.array(
             [
                 [0, 1, 0, 0],

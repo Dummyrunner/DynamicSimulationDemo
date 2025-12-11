@@ -6,11 +6,18 @@ from game_controller import CraneControllerPID, StateFeedbackController
 from inverted_pendulum_plant import (
     InvertedPendulumPlant,
     InvertedPendulumInput,
+    DefaultModelParams,
 )
 from data_plotter import DataPlotter
 from pygame_widgets.slider import Slider
 import pygame_widgets
 import numpy as np
+import control
+from inverted_pendulum_model import InvertedPendlumModel as IpModel
+from state_space_control_calculations import (
+    evaluate_controllability_observability,
+    plot_lti_poles,
+)
 
 SAMPLE_TIME = 1 / 60.0
 INITIAL_KP = 3e7
@@ -197,5 +204,24 @@ class Game:
 
 
 if __name__ == "__main__":
-    game = Game()
-    game.main_loop()
+    model_params = DefaultModelParams
+    A, B, C, D = IpModel.state_space_model_matrices(
+        mass_cart=model_params.CART_MASS,
+        mass_pendulum=model_params.BALL_MASS,
+        length_pendulum=model_params.PENDULUM_LENGTH,
+        gravity=model_params.GRAVITY[1],
+    )
+    cont_lti = control.ss(A, B, C, D)
+    print("STATE SPACE SYSTEM REPRESENTATION:\n", cont_lti)
+
+    controllable, observable = evaluate_controllability_observability(A, B, C)
+    # plot_lti_poles(cont_lti)
+    desired_poles = [-1, -2, -3, -4]
+    K = control.place(A, B, desired_poles)
+    print(f"K = {K}")
+    print(f"B @ K = {B.transpose() @ K}")
+    # sys_cl = control.ss(A_cl, B,
+    A_cl = A - B.transpose() @ K
+    sys_cl = control.ss(A_cl, B, C, np.array([0, 0]).transpose())
+    plot_lti_poles(sys_cl)
+    # game = Game()
