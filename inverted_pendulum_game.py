@@ -35,7 +35,7 @@ SLIDER_HEIGHT = 20
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, plant, controller):  # =None):
         # Initialize Pygame and Pymunk
         pygame.init()
 
@@ -49,13 +49,8 @@ class Game:
         pygame.display.set_caption("Inverted Pendulum")
 
         # Create physics space
-        self.space = pymunk.Space()
-        self.plant = InvertedPendulumPlant(
-            self.space, pygame.display.get_window_size(), SAMPLE_TIME
-        )
-        self.controller = StateFeedbackController(
-            gain_matrix=np.array([1, 1, 1, 1]), sample_time=SAMPLE_TIME
-        )
+        self.plant = plant
+        self.controller = controller
         # Create visual-only objects list (will be populated in setup_objects)
         self.non_physical_objects = []
         self.control_active = True
@@ -205,28 +200,38 @@ class Game:
 
 
 if __name__ == "__main__":
-    model_params = DefaultModelParams
-    A, B, C, D = IpModel.state_space_model_matrices(
-        mass_cart=model_params.CART_MASS,
-        mass_pendulum=model_params.BALL_MASS,
-        length_pendulum=model_params.PENDULUM_LENGTH,
-        gravity=model_params.GRAVITY[1],
-    )
-    cont_lti = control.ss(A, B, C, D)
-    print("STATE SPACE SYSTEM REPRESENTATION:\n", cont_lti)
+    # model_params = DefaultModelParams
+    # A, B, C, D = IpModel.state_space_model_matrices(
+    #     mass_cart=model_params.CART_MASS,
+    #     mass_pendulum=model_params.BALL_MASS,
+    #     length_pendulum=model_params.PENDULUM_LENGTH,
+    #     gravity=model_params.GRAVITY[1],
+    # )
+    # cont_lti = control.ss(A, B, C, D)
+    # print("STATE SPACE SYSTEM REPRESENTATION:\n", cont_lti)
 
-    controllable, observable = evaluate_controllability_observability(A, B, C)
-    desired_poles = [-1, -2, -3, -4]
-    K = control.place(A, B, desired_poles)
-    plot_lti_poles(cont_lti, title="System Pole Locations open loop")
-    B = B.reshape(4, 1)
+    # controllable, observable = evaluate_controllability_observability(A, B, C)
+    # desired_poles = [-1, -2, -3, -4]
+    # K = control.place(A, B, desired_poles)
+    # plot_lti_poles(cont_lti, title="System Pole Locations open loop")
+    # B = B.reshape(4, 1)
 
-    A_cl = A - B @ K
-    sys_cl = control.ss(A_cl, B, C, D)
-    plot_lti_poles(
-        sys_cl,
-        title="System Pole Locations closed Loop",
-        figtext=f"controller gains {K}",
+    # A_cl = A - B @ K
+    # sys_cl = control.ss(A_cl, B, C, D)
+    # plot_lti_poles(
+    #     sys_cl,
+    #     title="System Pole Locations closed Loop",
+    #     figtext=f"controller gains {K}",
+    # )
+    # plt.show()
+    plant = InvertedPendulumPlant(
+        pymunk.Space(), (WINDOW_WIDTH, WINDOW_HEIGHT), SAMPLE_TIME
     )
-    plt.show()
-    # game = Game()
+    controller = StateFeedbackController(
+        gain_matrix=np.array([1, 1, 1, 1]), sample_time=SAMPLE_TIME
+    )
+    game = Game(
+        plant=plant,
+        controller=controller,
+    )
+    game.main_loop()
