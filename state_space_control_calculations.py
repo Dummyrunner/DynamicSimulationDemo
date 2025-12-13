@@ -26,14 +26,34 @@ def evaluate_controllability_observability(A, B, C):
     return system_controllable, system_observable
 
 
-def plot_lti_poles(system: control.lti):
+def plot_lti_poles(system: control.lti, title="System Pole Locations", figtext=None):
     poles = system.poles()
-    plt.figure(figsize=(8, 6))
+
+    # Create the figure and axis
+    fig = plt.figure(figsize=(8, 6))
+    plt.figtext(
+        0.5, 0.01, figtext, wrap=True, horizontalalignment="center", fontsize=12
+    )
+    # Determine the extent of the plot based on pole locations
+    max_real = max(abs(poles.real.max()), 1)  # Ensure at least 1 unit coverage
+    max_imag = max(abs(poles.imag.max()), 1)  # Ensure at least 1 unit coverage
+
+    # Color the right half-plane light red with low opacity
+    HUGE_VALUE_FOR_X_AXIS = 1e6
+    plt.axvspan(0, HUGE_VALUE_FOR_X_AXIS, facecolor="red", alpha=0.1)
+
+    # Plot the poles
     plt.scatter(poles.real, poles.imag, marker="x", color="red", s=100)
-    plt.title("Pole Locations")
+
+    # Set axis limits to provide some padding
+    plt.xlim(min(poles.real.min() * 1.2, -0.5), max_real * 1.2)
+    plt.ylim(-max_imag * 1.2, max_imag * 1.2)
+
+    # Add labels and styling
+    plt.title(title)
     plt.xlabel("Real Part")
     plt.ylabel("Imaginary Part")
     plt.axhline(y=0, color="k", linestyle="--")
     plt.axvline(x=0, color="k", linestyle="--")
     plt.grid(True)
-    plt.show()
+    plt.draw()
