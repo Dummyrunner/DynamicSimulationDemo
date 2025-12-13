@@ -200,35 +200,48 @@ class Game:
 
 
 if __name__ == "__main__":
-    # model_params = DefaultModelParams
-    # A, B, C, D = IpModel.state_space_model_matrices(
-    #     mass_cart=model_params.CART_MASS,
-    #     mass_pendulum=model_params.BALL_MASS,
-    #     length_pendulum=model_params.PENDULUM_LENGTH,
-    #     gravity=model_params.GRAVITY[1],
-    # )
-    # cont_lti = control.ss(A, B, C, D)
-    # print("STATE SPACE SYSTEM REPRESENTATION:\n", cont_lti)
+    model_params = DefaultModelParams
+    A, B, C, D = IpModel.state_space_model_matrices(
+        mass_cart=model_params.CART_MASS,
+        mass_pendulum=model_params.BALL_MASS,
+        length_pendulum=model_params.PENDULUM_LENGTH,
+        gravity=model_params.GRAVITY[1],
+    )
+    sys_ol = control.ss(A, B, C, D)
+    print("STATE SPACE SYSTEM REPRESENTATION:\n", sys_ol)
 
-    # controllable, observable = evaluate_controllability_observability(A, B, C)
-    # desired_poles = [-1, -2, -3, -4]
-    # K = control.place(A, B, desired_poles)
-    # plot_lti_poles(cont_lti, title="System Pole Locations open loop")
-    # B = B.reshape(4, 1)
+    controllable, observable = evaluate_controllability_observability(A, B, C)
+    SCALE = 0.6
+    desired_poles = [
+        SCALE * (-2.0 + 2j),
+        SCALE * (-2.0 - 2j),
+        SCALE * (-1.6 + 1.3j),
+        SCALE * (-1.6 - 1.3j),
+    ]
+    print(f"Desired poles: {desired_poles}")
+    K = control.place(A, B, desired_poles)
+    plot_lti_poles(sys_ol, title="System Pole Locations open loop")
+    B = B.reshape(4, 1)
 
-    # A_cl = A - B @ K
-    # sys_cl = control.ss(A_cl, B, C, D)
-    # plot_lti_poles(
-    #     sys_cl,
-    #     title="System Pole Locations closed Loop",
-    #     figtext=f"controller gains {K}",
-    # )
+    A_cl = A - B @ K
+    sys_cl = control.ss(A_cl, B, C, D)
+    plot_lti_poles(
+        sys_cl,
+        title="System Pole Locations closed Loop",
+        figtext=f"controller gains {K}",
+    )
     # plt.show()
+
+    wn_cl, zeta_cl, poles_cl = control.damp(sys_cl, doprint=False)
+    wn_ol, zeta_ol, poles_ol = control.damp(sys_ol, doprint=False)
+    print(f"wn_cl, zeta_cl, poles_cl = {(wn_cl, zeta_cl, poles_cl)}")
+    state_feedback_controller_gain_matrix = K
+
     plant = InvertedPendulumPlant(
         pymunk.Space(), (WINDOW_WIDTH, WINDOW_HEIGHT), SAMPLE_TIME
     )
     controller = StateFeedbackController(
-        gain_matrix=np.array([1, 1, 1, 1]), sample_time=SAMPLE_TIME
+        gain_matrix=state_feedback_controller_gain_matrix, sample_time=SAMPLE_TIME
     )
     game = Game(
         plant=plant,
