@@ -89,6 +89,23 @@ class Game:
         pygame.display.flip()
         self.clock.tick(60)
 
+    def _draw_reference_position_line(self):
+        """Draw a vertical red dashed line at the reference position."""
+        x = int(self.reference_signal_position)
+        # Draw dashed line by drawing small segments
+        dash_length = 10
+        gap_length = 5
+        y = 0
+        while y < self.HEIGHT:
+            pygame.draw.line(
+                self.screen,
+                (255, 0, 0),  # Red color
+                (x, y),
+                (x, min(y + dash_length, self.HEIGHT)),
+                2,  # Line width
+            )
+            y += dash_length + gap_length
+
     def _create_slider_covering_rect(slider: Slider):
         slider_rect = pygame.Rect(
             slider.getX(),
@@ -112,10 +129,10 @@ class Game:
         slider_value = self.reference_signal_slider.getValue()
         # Map slider value to position: -100 -> groove_left_x, 0 -> center, 100 -> groove_right_x
         center_x = (groove_left_x + groove_right_x) / 2.0
-        left_offset = center_x - groove_left_x
-        right_offset = groove_right_x - center_x
-        max_offset = max(left_offset, right_offset)
-        self.reference_signal_position = center_x + (slider_value / 100.0) * max_offset
+        self.reference_signal_position = (
+            center_x
+            + 2 * (slider_value - 50) / 100.0 * (groove_right_x - groove_left_x) / 2
+        )
 
     def main_loop(self):
         running = True
@@ -157,10 +174,14 @@ class Game:
 
             # control_error = self.reference_signal_angle - plant_state.joint_angle
             currents_state = self.plant.get_state()
+            reference_state = np.array(
+                [self.reference_signal_position, 0, self.reference_signal_angle, 0]
+            )
+            difference_vector = currents_state - reference_state
             # Get key related velocity change
             input_signal_from_key = self.plant.input_from_key()
             force_from_control = (
-                self.controller.get_control_input(currents_state)
+                self.controller.get_control_input(difference_vector)
                 if self.control_active
                 else 0.0
             )
