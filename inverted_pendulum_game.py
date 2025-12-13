@@ -18,6 +18,7 @@ from state_space_control_calculations import (
     evaluate_controllability_observability,
     plot_lti_poles,
 )
+import matplotlib.pyplot as plt
 
 SAMPLE_TIME = 1 / 60.0
 INITIAL_KP = 3e7
@@ -215,13 +216,17 @@ if __name__ == "__main__":
     print("STATE SPACE SYSTEM REPRESENTATION:\n", cont_lti)
 
     controllable, observable = evaluate_controllability_observability(A, B, C)
-    # plot_lti_poles(cont_lti)
     desired_poles = [-1, -2, -3, -4]
     K = control.place(A, B, desired_poles)
-    print(f"K = {K}")
-    print(f"B @ K = {B.transpose() @ K}")
-    # sys_cl = control.ss(A_cl, B,
-    A_cl = A - B.transpose() @ K
-    sys_cl = control.ss(A_cl, B, C, np.array([0, 0]).transpose())
-    plot_lti_poles(sys_cl)
+    plot_lti_poles(cont_lti, title="System Pole Locations open loop")
+    B = B.reshape(4, 1)
+
+    A_cl = A - B @ K
+    sys_cl = control.ss(A_cl, B, C, D)
+    plot_lti_poles(
+        sys_cl,
+        title="System Pole Locations closed Loop",
+        figtext=f"controller gains {K}",
+    )
+    plt.show()
     # game = Game()
