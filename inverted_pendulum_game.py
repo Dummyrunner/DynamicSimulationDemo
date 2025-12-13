@@ -57,7 +57,7 @@ class Game:
 
         # Initialize data plotter
         self.data_plotter = DataPlotter(max_points=10000, update_interval=20)
-        self.data_plotter.live_update_active = False
+        self.data_plotter.live_update_active = True
 
         self.reference_signal_angle = 0.0
         self.reference_signal_slider = Slider(
@@ -206,37 +206,48 @@ if __name__ == "__main__":
         mass_pendulum=model_params.BALL_MASS,
         length_pendulum=model_params.PENDULUM_LENGTH,
         gravity=model_params.GRAVITY[1],
+        force_scale=model_params.FORCE_SCALE,
     )
     sys_ol = control.ss(A, B, C, D)
     print("STATE SPACE SYSTEM REPRESENTATION:\n", sys_ol)
 
     controllable, observable = evaluate_controllability_observability(A, B, C)
-    SCALE = 0.6
+    SCALE = 1
     desired_poles = [
-        SCALE * (-2.0 + 2j),
-        SCALE * (-2.0 - 2j),
+        SCALE * (-8.0),
+        SCALE * (-9.0),
         SCALE * (-1.6 + 1.3j),
         SCALE * (-1.6 - 1.3j),
     ]
     print(f"Desired poles: {desired_poles}")
-    K = control.place(A, B, desired_poles)
-    plot_lti_poles(sys_ol, title="System Pole Locations open loop")
+    K_cont = control.place(A, B, desired_poles)
+    # plot_lti_poles(sys_ol, title="System Pole Locations open loop")
     B = B.reshape(4, 1)
 
-    A_cl = A - B @ K
-    sys_cl = control.ss(A_cl, B, C, D)
+    A_cl = A - B @ K_cont
+    sys_cl_cont = control.ss(A_cl, B, C, D)
+    sys_cl_cont.set_outputs(["x", "phi"], "y")
+    # plot_lti_poles(
+    #     sys_cl_cont,
+    #     title="System Pole Locations closed Loop",
+    #     figtext=f"controller gains {K_cont}",
+    # )
+    # control.step_response(sys_cl_cont).plot()
+
+    # Discretize
+    dt = SAMPLE_TIME
+    sys_cl_dsc = sys_cl_cont.sample(dt, method="zoh")
+    desired_poles_dsc = np.exp(np.array(desired_poles) * dt)
+    print(f"desired poles discrete: {desired_poles_dsc}")
+    K_dsc = control.place(sys_cl_dsc.A, sys_cl_dsc.B, desired_poles_dsc)
     plot_lti_poles(
-        sys_cl,
-        title="System Pole Locations closed Loop",
-        figtext=f"controller gains {K}",
+        sys_cl_dsc,
+        title="Discrete System Pole Locations closed Loop",
+        figtext=f"controller gains {K_cont}",
     )
-    # plt.show()
-
-    wn_cl, zeta_cl, poles_cl = control.damp(sys_cl, doprint=False)
-    wn_ol, zeta_ol, poles_ol = control.damp(sys_ol, doprint=False)
-    print(f"wn_cl, zeta_cl, poles_cl = {(wn_cl, zeta_cl, poles_cl)}")
-    state_feedback_controller_gain_matrix = K
-
+    control.step_response(sys_cl_dsc).plot()
+    plt.show()
+    state_feedback_controller_gain_matrix = K_dsc
     plant = InvertedPendulumPlant(
         pymunk.Space(), (WINDOW_WIDTH, WINDOW_HEIGHT), SAMPLE_TIME
     )
