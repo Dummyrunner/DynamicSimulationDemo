@@ -3,7 +3,9 @@ import numpy as np
 
 class InvertedPendlumModel:
     @staticmethod
-    def state_space_model_matrices(mass_cart, mass_pendulum, length_pendulum, gravity):
+    def state_space_model_matrices(
+        mass_cart, mass_pendulum, length_pendulum, gravity, force_scale
+    ):
         """
         Create state space matricses for
         linearized inverted pendulum system in unstable equilibrium
@@ -33,7 +35,9 @@ class InvertedPendlumModel:
                 ],
             ]
         )
-        B = np.transpose(np.array([0, 1 / M, 0, 1 / (L * M)]))
+        B = np.transpose(
+            np.array([0, force_scale * 1 / M, 0, force_scale * 1 / (L * M)])
+        )
         C = np.array([[1, 0, 0, 0], [0, 0, 1, 0]])
         D = np.array([[0], [0]])
         return (A, B, C, D)
