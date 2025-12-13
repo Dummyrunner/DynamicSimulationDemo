@@ -101,7 +101,7 @@ class DefaultModelParams:
     CART_MAX_SPEED: int = 1200
     CART_WIDTH: int = 100
     CART_HEIGHT: int = 20
-    CART_MASS: float = 10000
+    CART_MASS: float = 2000
     BALL_MASS: float = 90
     FORCE_SCALE: float = 1e7
     GRAVITY: Vec2d = Vec2d(0, 981)
