@@ -22,10 +22,10 @@
             "python": "${workspaceFolder}/.venv/bin/python3"
         },
         {
-            "name": "Debug-Run Boat",
+            "name": "Debug-Run Submarine",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/boat_top_down_game.py",
+            "program": "${workspaceFolder}/submarine.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "env": {},
