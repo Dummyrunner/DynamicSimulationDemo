@@ -198,6 +198,12 @@ class Game:
         text_surface = font.render(state_text, True, (0, 0, 0))
         self.screen.blit(text_surface, (10, 10))
 
+        # Draw control status
+        control_status = "ON" if self.plant.control_active else "OFF"
+        control_text = f"Control: {control_status}"
+        control_surface = font.render(control_text, True, (0, 0, 0))
+        self.screen.blit(control_surface, (10, 50))
+
     def main_loop(self):
         running = True
 
@@ -218,6 +224,11 @@ class Game:
                     self.game_state = GameState.PAUSED
                 elif self.game_state == GameState.PAUSED:
                     self.game_state = GameState.RUNNING
+                self.frames_since_toggle_counter = 0
+
+            # Toggle control with C key (lock for 10 frames)
+            if keys[pygame.K_c] and self.frames_since_toggle_counter > 10:
+                self.plant.control_active = not self.plant.control_active
                 self.frames_since_toggle_counter = 0
 
             if keys[pygame.K_ESCAPE]:

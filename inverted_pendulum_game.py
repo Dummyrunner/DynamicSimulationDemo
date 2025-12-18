@@ -37,6 +37,7 @@ SLIDER_HEIGHT = 20
 
 class GameState(Enum):
     """Enumeration of possible game states."""
+
     READY = "READY"
     RUNNING = "RUNNING"
     PAUSED = "PAUSED"
@@ -55,7 +56,7 @@ class Game:
         self.reference_signal_position = WINDOW_WIDTH // 2
         self.game_state = GameState.PAUSED
         self.frames_since_toggle_counter = 0
-        
+
         # Set up display
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("Inverted Pendulum")
@@ -142,6 +143,12 @@ class Game:
         text_surface = font.render(state_text, True, (0, 0, 0))
         self.screen.blit(text_surface, (10, 10))
 
+        # Draw control status
+        control_status = "ON" if self.control_active else "OFF"
+        control_text = f"Control: {control_status}"
+        control_surface = font.render(control_text, True, (0, 0, 0))
+        self.screen.blit(control_surface, (10, 50))
+
     def _create_slider_covering_rect(slider: Slider):
         slider_rect = pygame.Rect(
             slider.getX(),
@@ -193,7 +200,7 @@ class Game:
             pygame_widgets.update(events)
 
             keys = pygame.key.get_pressed()
-            
+
             # Toggle between RUNNING and PAUSED with P key (lock for 10 frames)
             if keys[pygame.K_p] and self.frames_since_toggle_counter > 10:
                 if self.game_state == GameState.RUNNING:
@@ -201,7 +208,7 @@ class Game:
                 elif self.game_state == GameState.PAUSED:
                     self.game_state = GameState.RUNNING
                 self.frames_since_toggle_counter = 0
-            
+
             # Lock control toggle for 10 frames to prevent rapid toggling
             if keys[pygame.K_c] and self.frames_since_toggle_counter > 10:
                 self.control_active = not self.control_active
