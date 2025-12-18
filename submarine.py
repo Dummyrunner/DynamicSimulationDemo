@@ -1,6 +1,7 @@
 import pygame
 import pymunk
 import sys
+from enum import Enum
 from boat_top_down_plant import BoatTopdownPlant, BoatTopdownInput
 from abc import ABC, abstractmethod
 from typing import NamedTuple
@@ -11,6 +12,15 @@ from physical_objects import Submarine
 SAMPLE_TIME = 1 / 60.0
 WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
+
+
+class GameState(Enum):
+    """Enumeration of possible game states."""
+
+    READY = "READY"
+    RUNNING = "RUNNING"
+    PAUSED = "PAUSED"
+    FINISHED = "FINISHED"
 
 
 @dataclass
@@ -155,6 +165,8 @@ class Game:
         self.WIDTH = WINDOW_WIDTH
         self.HEIGHT = WINDOW_HEIGHT
         self.reference_signal = 0.0
+        self.game_state = GameState.PAUSED
+        self.frames_since_toggle_counter = 0
 
         # Set up display
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
@@ -171,38 +183,52 @@ class Game:
         # Clear screen
         self.screen.fill((150, 200, 255))
         self.plant.draw(self.screen)
+
+        # Display current game state
+        self._draw_state_indicator()
+
         # Update display
         pygame.display.flip()
         self.clock.tick(60)
 
+    def _draw_state_indicator(self):
+        """Draw the current game state on screen."""
+        font = pygame.font.Font(None, 36)
+        state_text = f"State: {self.game_state.value}"
+        text_surface = font.render(state_text, True, (0, 0, 0))
+        self.screen.blit(text_surface, (10, 10))
+
     def main_loop(self):
         running = True
-        frames_since_toggle_counter = 0
 
         while running:
-            frames_since_toggle_counter += 1
+            self.frames_since_toggle_counter += 1
             events = pygame.event.get()
             for event in events:
                 if event.type == pygame.QUIT:
                     running = False
                     continue
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = pygame.mouse.get_pos()
 
-            # Update pygame_widgets with events (for slider interaction)
-
+            # Handle keyboard input
             keys = pygame.key.get_pressed()
-            # Lock  control toggle for 10 frames to prevent rapid toggling
-            if keys[pygame.K_c] and frames_since_toggle_counter > 10:
-                self.control_active = not self.control_active
-                frames_since_toggle_counter = 0
+
+            # Toggle between RUNNING and PAUSED with P key (lock for 10 frames)
+            if keys[pygame.K_p] and self.frames_since_toggle_counter > 10:
+                if self.game_state == GameState.RUNNING:
+                    self.game_state = GameState.PAUSED
+                elif self.game_state == GameState.PAUSED:
+                    self.game_state = GameState.RUNNING
+                self.frames_since_toggle_counter = 0
+
             if keys[pygame.K_ESCAPE]:
                 running = False
 
-            input_from_key = self.plant.input_from_key()
-            self.plant.set_input(SubmarineInput(vertical_thrust=input_from_key))
+            # Only perform simulation steps when in RUNNING state
+            if self.game_state == GameState.RUNNING:
+                input_from_key = self.plant.input_from_key()
+                self.plant.set_input(SubmarineInput(vertical_thrust=input_from_key))
+                self.plant.step(SAMPLE_TIME)
 
-            self.plant.step(SAMPLE_TIME)
             self.update_ui()
 
         pygame.quit()
