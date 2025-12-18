@@ -2,12 +2,12 @@ import pygame
 import pymunk
 import sys
 from enum import Enum
-from boat_top_down_plant import BoatTopdownPlant, BoatTopdownInput
 from abc import ABC, abstractmethod
 from typing import NamedTuple
 from dataclasses import dataclass
 from pymunk import Vec2d
 from physical_objects import Submarine
+from game_controller import ControllerPID
 
 SAMPLE_TIME = 1 / 60.0
 WINDOW_WIDTH = 1200
@@ -105,7 +105,6 @@ class SubmarinePlant(PlantBase):
         self.model_params = model_params
         self.n_inputs: int = 1
         self.n_outputs: int = 1
-        self.control_active = True
         self._create_objects(window_size, space)
         self.input = SubmarineInput(0)
         self.output = SubmarineOutput(0)
@@ -167,9 +166,12 @@ class Game:
         # Constants
         self.WIDTH = WINDOW_WIDTH
         self.HEIGHT = WINDOW_HEIGHT
-        self.reference_signal = 0.0
+        self.reference_signal = WINDOW_HEIGHT / 2
         self.game_state = GameState.PAUSED
         self.frames_since_toggle_counter = 0
+        KP_DEFAULT = 5000.0
+        KI_DEFAULT = 0.0
+        KD_DEFAULT = 0.0
 
         # Set up display
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
@@ -181,6 +183,7 @@ class Game:
             window_size=(WINDOW_WIDTH, WINDOW_HEIGHT),
             sample_time=SAMPLE_TIME,
         )
+        self.control_active = False
 
     def update_ui(self):
         # Clear screen
@@ -202,7 +205,7 @@ class Game:
         self.screen.blit(text_surface, (10, 10))
 
         # Draw control status
-        control_status = "ON" if self.plant.control_active else "OFF"
+        control_status = "ON" if self.control_active else "OFF"
         control_text = f"Control: {control_status}"
         control_surface = font.render(control_text, True, (0, 0, 0))
         self.screen.blit(control_surface, (10, 50))
@@ -233,7 +236,7 @@ class Game:
 
             # Toggle control with C key (lock for 10 frames)
             if keys[pygame.K_c] and self.frames_since_toggle_counter > 10:
-                self.plant.control_active = not self.plant.control_active
+                self.control_active = not self.control_active
                 self.frames_since_toggle_counter = 0
 
             if keys[pygame.K_ESCAPE]:
@@ -241,7 +244,9 @@ class Game:
 
             # Only perform simulation steps when in RUNNING state
             if self.game_state == GameState.RUNNING:
-                input_from_key = self.plant.input_from_key()
+                input_from_key = (
+                    self.plant.input_from_key() if not self.control_active else 0.0
+                )
                 self.plant.set_input(SubmarineInput(vertical_thrust=input_from_key))
                 self.plant.step(SAMPLE_TIME)
 
