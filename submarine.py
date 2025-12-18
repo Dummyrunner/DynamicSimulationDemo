@@ -151,7 +151,7 @@ class SubmarinePlant(PlantBase):
             thickness=1,
         )
         self.submarine = Submarine(
-            self.space, position=(window_width / 4, y_center), width=50, height=20
+            self.space, position=(10, window_height * 0.75), width=50, height=20
         )
         self.submarine.body.velocity = Vec2d(
             self.model_params.SUBMARINE_HORIZONTAL_SPEED, 0
@@ -169,8 +169,8 @@ class Game:
         self.reference_signal = WINDOW_HEIGHT / 2
         self.game_state = GameState.PAUSED
         self.frames_since_toggle_counter = 0
-        KP_DEFAULT = 5000.0
-        KI_DEFAULT = 0.0
+        KP_DEFAULT = -500.0
+        KI_DEFAULT = -10
         KD_DEFAULT = 0.0
 
         # Set up display
@@ -182,6 +182,9 @@ class Game:
             self.space,
             window_size=(WINDOW_WIDTH, WINDOW_HEIGHT),
             sample_time=SAMPLE_TIME,
+        )
+        self.controller = ControllerPID(
+            kp=KP_DEFAULT, ki=KI_DEFAULT, kd=KD_DEFAULT, sample_time=SAMPLE_TIME
         )
         self.control_active = False
 
@@ -247,7 +250,19 @@ class Game:
                 input_from_key = (
                     self.plant.input_from_key() if not self.control_active else 0.0
                 )
-                self.plant.set_input(SubmarineInput(vertical_thrust=input_from_key))
+                control_error = (
+                    self.plant.submarine.body.position.y - self.reference_signal
+                )
+                input_from_controller = (
+                    self.controller.get_control_input(control_error)
+                    if self.control_active
+                    else 0.0
+                )
+                self.plant.set_input(
+                    SubmarineInput(
+                        vertical_thrust=input_from_key + input_from_controller
+                    )
+                )
                 self.plant.step(SAMPLE_TIME)
 
             self.update_ui()
