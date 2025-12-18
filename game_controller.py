@@ -20,7 +20,7 @@ class GameControllerBase(ABC):
         print(f"PID Control Input: {control_input}")
 
 
-class CraneControllerPID(GameControllerBase):
+class ControllerPID(GameControllerBase):
     def __init__(self, kp: float, ki: float, kd: float, sample_time: float):
         super().__init__()
         self._kp = kp
