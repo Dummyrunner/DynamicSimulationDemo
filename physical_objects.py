@@ -1,5 +1,42 @@
 import pymunk
 import pygame
+from collections import deque
+from functools import wraps
+
+
+def track_trajectory(color=(255, 255, 255), max_points=500):
+    """Decorator that adds trajectory tracking to a GameObject's draw method.
+
+    Args:
+        color: RGB tuple for trajectory point color (e.g., (255, 0, 0) for red)
+        max_points: Maximum number of trajectory points to keep in history
+    """
+
+    def decorator(draw_method):
+        @wraps(draw_method)
+        def wrapper(self, surface):
+            # Initialize trajectory tracking if not already present
+            if not hasattr(self, "_trajectory"):
+                self._trajectory = deque(maxlen=max_points)
+                self._trajectory_color = color
+
+            # Add current position to trajectory
+            if self.body is not None:
+                self._trajectory.append(
+                    (int(self.body.position.x), int(self.body.position.y))
+                )
+
+            # Draw trajectory points before drawing the object
+            if len(self._trajectory) > 1:
+                for point in self._trajectory:
+                    pygame.draw.circle(surface, self._trajectory_color, point, 1)
+
+            # Draw the object itself
+            draw_method(self, surface)
+
+        return wrapper
+
+    return decorator
 
 
 class GameObject:
@@ -42,6 +79,7 @@ class Submarine(GameObject):
         self.shape.friction = 0.9
         space.add(self.body, self.shape)
 
+    @track_trajectory(color=(255, 100, 0), max_points=1000)
     def draw(self, screen):
         pos_x = self.body.position.x - self.width / 2
         pos_y = self.body.position.y - self.height / 2
@@ -110,6 +148,7 @@ class Ball(GameObject):
         self.body.position = position
         self.body.velocity = (0, 0)
 
+    @track_trajectory(color=(200, 100, 255), max_points=800)
     def draw(self, surface):
         """Draw the ball using pygame directly."""
         # Draw the circle
