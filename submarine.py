@@ -28,7 +28,8 @@ class DefaultSubmarineModelParams:
     SUBMARINE_WIDTH: int = 50
     SUBMARINE_HEIGHT: float = 20
     SUMBARINE_MASS: float = 9
-    KEY_FORCE_SCALE: float = 5e6
+    SUBMARINE_HORIZONTAL_SPEED: float = 100
+    KEY_FORCE_SCALE: float = 5e5
 
 
 class PlantBase(ABC):
@@ -153,7 +154,9 @@ class SubmarinePlant(PlantBase):
         self.submarine = Submarine(
             self.space, position=(window_width / 4, y_center), width=50, height=20
         )
-        # space.add(self.boat.body)
+        self.submarine.body.velocity = Vec2d(
+            self.model_params.SUBMARINE_HORIZONTAL_SPEED, 0
+        )
 
 
 class Game:
@@ -208,6 +211,8 @@ class Game:
         running = True
 
         while running:
+            if self.plant.submarine.body.position.x > self.WIDTH:
+                self.game_state = GameState.FINISHED
             self.frames_since_toggle_counter += 1
             events = pygame.event.get()
             for event in events:
