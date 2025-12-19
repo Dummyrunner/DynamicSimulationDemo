@@ -13,6 +13,10 @@ SAMPLE_TIME = 1 / 60.0
 WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
 
+KP_DEFAULT = -6000.0
+KI_DEFAULT = 0.0
+KD_DEFAULT = -6000.0
+
 
 class GameState(Enum):
     """Enumeration of possible game states."""
@@ -105,7 +109,7 @@ class SubmarinePlant(PlantBase):
         self.model_params = model_params
         self.n_inputs: int = 1
         self.n_outputs: int = 1
-        self._create_objects(window_size, space)
+        self._create_objects(window_size)
         self.input = SubmarineInput(0)
         self.output = SubmarineOutput(0)
         self.state = SubmarineState(0, 0)
@@ -139,7 +143,7 @@ class SubmarinePlant(PlantBase):
             vertical_thrust += self.model_params.KEY_FORCE_SCALE
         return vertical_thrust
 
-    def _create_objects(self, window_size, space):
+    def _create_objects(self, window_size):
         window_width = window_size[0]
         window_height = window_size[1]
         y_center = window_height / 2
@@ -159,7 +163,7 @@ class SubmarinePlant(PlantBase):
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, plant: SubmarinePlant, controller: ControllerPID):
         # Initialize Pygame and Pymunk
         pygame.init()
         self.clock = pygame.time.Clock()
@@ -169,9 +173,6 @@ class Game:
         self.reference_signal = WINDOW_HEIGHT / 2
         self.game_state = GameState.PAUSED
         self.frames_since_toggle_counter = 0
-        KP_DEFAULT = -5000.0
-        KI_DEFAULT = 0.0
-        KD_DEFAULT = -2000.0
 
         # Control force arrow visualization parameters
         self.arrow_scale = 0.0001  # Pixels per Newton
@@ -182,14 +183,8 @@ class Game:
         pygame.display.set_caption("Submarine Simulation")
         # Create physics space
         self.space = pymunk.Space()
-        self.plant = SubmarinePlant(
-            self.space,
-            window_size=(WINDOW_WIDTH, WINDOW_HEIGHT),
-            sample_time=SAMPLE_TIME,
-        )
-        self.controller = ControllerPID(
-            kp=KP_DEFAULT, ki=KI_DEFAULT, kd=KD_DEFAULT, sample_time=SAMPLE_TIME
-        )
+        self.plant = plant
+        self.controller = controller
         self.control_active = False
 
     def update_ui(self):
@@ -217,14 +212,25 @@ class Game:
         """Draw the current game state on screen."""
         font = pygame.font.Font(None, 36)
         state_text = f"State: {self.game_state.value}"
-        text_surface = font.render(state_text, True, (0, 0, 0))
+        text_surface = font.render(state_text, True, (255, 255, 255))
         self.screen.blit(text_surface, (10, 10))
 
         # Draw control status
         control_status = "ON" if self.control_active else "OFF"
         control_text = f"Control: {control_status}"
-        control_surface = font.render(control_text, True, (0, 0, 0))
+        control_surface = font.render(control_text, True, (255, 255, 255))
         self.screen.blit(control_surface, (10, 50))
+
+    def _display_least_squares_score(self, score):
+        font = pygame.font.Font(None, 48)
+        score_text = f"Least Squares Score: {score:.2f}"
+        text_surface = font.render(score_text, True, (255, 255, 255))
+        # Blit score text to center of screen
+        text_rect = text_surface.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2))
+        self.screen.blit(text_surface, text_rect)
+        pygame.display.flip()
+        # Pause for a few seconds to display the score
+        pygame.time.delay(3000)
 
     def _draw_control_force_arrow(
         self, sub_pos, force, arrow_scale, arrow_max_length=150
@@ -298,10 +304,12 @@ class Game:
 
     def main_loop(self):
         running = True
+        least_squares_score = 0.0
 
         while running:
             if self.plant.submarine.body.position.x > self.WIDTH:
                 self.game_state = GameState.FINISHED
+                self._display_least_squares_score(least_squares_score)
             self.frames_since_toggle_counter += 1
             events = pygame.event.get()
             for event in events:
@@ -311,7 +319,6 @@ class Game:
 
             # Handle keyboard input
             keys = pygame.key.get_pressed()
-
             # Toggle between RUNNING and PAUSED with P key (lock for 10 frames)
             if keys[pygame.K_p] and self.frames_since_toggle_counter > 10:
                 if self.game_state == GameState.RUNNING:
@@ -346,8 +353,8 @@ class Game:
                         vertical_thrust=input_from_key + input_from_controller
                     )
                 )
+                least_squares_score += control_error**2
                 self.plant.step(SAMPLE_TIME)
-
             self.update_ui()
 
         pygame.quit()
@@ -355,5 +362,13 @@ class Game:
 
 
 if __name__ == "__main__":
-    game = Game()
+    plant = SubmarinePlant(
+        pymunk.Space(),
+        window_size=(WINDOW_WIDTH, WINDOW_HEIGHT),
+        sample_time=SAMPLE_TIME,
+    )
+    controller = ControllerPID(
+        kp=KP_DEFAULT, ki=KI_DEFAULT, kd=KD_DEFAULT, sample_time=SAMPLE_TIME
+    )
+    game = Game(plant, controller)
     game.main_loop()
