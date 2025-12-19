@@ -106,6 +106,7 @@ class DefaultModelParams:
     FORCE_SCALE: float = 1e7
     GRAVITY: Vec2d = Vec2d(0, 981)
     PENDULUM_LENGTH: float = 280
+    KEY_FORCE_SCALE: float = 1e7
 
 
 class InvertedPendulumPlant(PlantBase):
@@ -167,7 +168,7 @@ class InvertedPendulumPlant(PlantBase):
     def set_input(self, input_data) -> None:
         self.input = input_data
 
-    def draw(self, options, screen):
+    def draw(self, screen):
         # Draw game objects with their custom draw methods
         self.cart.draw(screen)
         self.ball.draw(screen)

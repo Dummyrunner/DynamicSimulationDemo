@@ -1,6 +1,5 @@
 import pygame
 import pymunk
-import pymunk.pygame_util
 import sys
 from enum import Enum
 from game_controller import StateFeedbackController
@@ -9,7 +8,6 @@ from inverted_pendulum_plant import (
     InvertedPendulumInput,
     DefaultModelParams,
 )
-from data_plotter import DataPlotter
 from pygame_widgets.slider import Slider
 import pygame_widgets
 import numpy as np
@@ -17,9 +15,7 @@ import control
 from inverted_pendulum_model import InvertedPendlumModel as IpModel
 from state_space_control_calculations import (
     evaluate_controllability_observability,
-    plot_lti_poles,
 )
-import matplotlib.pyplot as plt
 
 SAMPLE_TIME = 1 / 60.0
 INITIAL_KP = 3e7
@@ -45,7 +41,7 @@ class GameState(Enum):
 
 
 class Game:
-    def __init__(self, plant, controller):  # =None):
+    def __init__(self, plant, controller):
         # Initialize Pygame and Pymunk
         pygame.init()
 
@@ -64,26 +60,9 @@ class Game:
         # Create physics space
         self.plant = plant
         self.controller = controller
-        # Create visual-only objects list (will be populated in setup_objects)
-        self.non_physical_objects = []
         self.control_active = True
 
-        # Initialize data plotter with state, input, and output labels
-        self.data_plotter = DataPlotter(
-            x_labels=[
-                "cart_position",
-                "cart_velocity",
-                "joint_angle",
-                "joint_angular_velocity",
-            ],
-            u_labels=["control_force"],
-            y_labels=["joint_angle"],
-            max_points=10000,
-            update_interval=20,
-        )
-        self.data_plotter.live_update_active = False
-
-        self.reference_signal_angle = 0.0
+        # Set up reference signal slider
         self.reference_signal_slider = Slider(
             self.screen,
             SLIDER_POS_X,
@@ -91,29 +70,24 @@ class Game:
             SLIDER_WIDTH,
             SLIDER_HEIGHT,
         )
-        self.slider_rect = Game._create_slider_covering_rect(
+        self.slider_rect = self._create_slider_covering_rect(
             self.reference_signal_slider
         )
+
         # Clock for frame rate
         self.clock = pygame.time.Clock()
-        # Drawing options
-        self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
-        self.recent_outputs = dict()
         self.simulation_time = 0.0
 
-    def update_ui(self, events):
+    def update_ui(self):
         # Clear screen
         self.screen.fill((255, 255, 255))
-        self.plant.draw(self.draw_options, self.screen)
+        self.plant.draw(self.screen)
 
         # Draw vertical red dashed line at reference position
         self._draw_reference_position_line()
 
         # Display current game state
         self._draw_state_indicator()
-
-        # Update widgets and let pygame_widgets handle drawing
-        pygame_widgets.update(events)
 
         # Update display
         pygame.display.flip()
@@ -149,6 +123,7 @@ class Game:
         control_surface = font.render(control_text, True, (0, 0, 0))
         self.screen.blit(control_surface, (10, 50))
 
+    @staticmethod
     def _create_slider_covering_rect(slider: Slider):
         slider_rect = pygame.Rect(
             slider.getX(),
@@ -180,12 +155,10 @@ class Game:
     def main_loop(self):
         running = True
 
-        # Start displaying the live plot
-        self.data_plotter.show_live()
-
         while running:
             self.frames_since_toggle_counter += 1
             events = pygame.event.get()
+
             for event in events:
                 if event.type == pygame.QUIT:
                     running = False
@@ -209,80 +182,50 @@ class Game:
                     self.game_state = GameState.RUNNING
                 self.frames_since_toggle_counter = 0
 
-            # Lock control toggle for 10 frames to prevent rapid toggling
+            # Toggle control with C key (lock for 10 frames)
             if keys[pygame.K_c] and self.frames_since_toggle_counter > 10:
                 self.control_active = not self.control_active
                 self.frames_since_toggle_counter = 0
+
             if keys[pygame.K_ESCAPE]:
                 running = False
 
             # Only perform simulation steps when in RUNNING state
             if self.game_state == GameState.RUNNING:
-                pygame_widgets.update(events)
-                # Get current plant output
+                # Get current plant state
                 plant_state = self.plant.get_state()
 
                 # Update reference signals from slider
                 self._update_reference_signal_from_slider()
 
-                # control_error = self.reference_signal_angle - plant_state.joint_angle
-                currents_state = self.plant.get_state()
+                # Calculate state difference for control
                 reference_state = np.array(
                     [self.reference_signal_position, 0, self.reference_signal_angle, 0]
                 )
-                difference_vector = -(currents_state - reference_state)
-                # Get key related velocity change
+                difference_vector = -(plant_state - reference_state)
 
+                # Get input from keyboard
                 input_signal_from_key = self.plant.input_from_key()
+
+                # Get control input from controller
                 force_from_control = (
                     self.controller.get_control_input(difference_vector)
                     if self.control_active
                     else 0.0
                 )
+
+                # Combine control and keyboard inputs
                 self.plant.set_input(
                     InvertedPendulumInput(
                         x_force=(force_from_control + input_signal_from_key)
                     )
                 )
-                print(
-                    f"input control {force_from_control}, input keys {input_signal_from_key}"
-                )
-                print(f"reference signal: {difference_vector}")
+
                 # Update simulation
                 self.plant.step(SAMPLE_TIME)
-
-                # Log data for plotting
-                state_vector = np.array(
-                    [
-                        plant_state.cart_position_x,
-                        plant_state.cart_velocity_x,
-                        plant_state.joint_angle,
-                        plant_state.joint_angular_velocity,
-                    ]
-                )
-                input_vector = np.array([force_from_control + input_signal_from_key])
-                output_vector = np.array([plant_state.joint_angle])
-
-                self.data_plotter.log_data(
-                    x=state_vector,
-                    u=input_vector,
-                    y=output_vector,
-                    time_delta=SAMPLE_TIME,
-                )
-
-                # Update plot display periodically
-                self.data_plotter.update_plot()
-
                 self.simulation_time += SAMPLE_TIME
 
-            self.update_ui(events)
-
-        # Save final plot to file
-        if self.data_plotter.live_update_active:
-            self.data_plotter.save("inverted_pendulum_simulation_final.png")
-            print(
-                "Simulation ended. Final plot saved to inverted_pendulum_simulation_final.png"
-            )
+            self.update_ui()
 
         pygame.quit()
         sys.exit()
