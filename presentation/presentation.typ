@@ -121,13 +121,15 @@ Schwerpunkt des heutigen Vortrags:
 = Beispiel: U-Boot Tiefenregelung
 == U-Boot Tiefenregelung: Problemstellung
 - U-Boot Tiefe soll vorgegebener Linie folgenden
-- Vertikale kraft kann beeinflusst werden
+- Vertikale Kraft kann beeinflusst werden
 _Simulation mit manueller Steuerung (Pfeiltasten)_
 
 == U-Boot Tiefenregelung: Regelung via Feedback
 - Ziel: Automatische Regelung der Tiefe
 - Anwendung: PID Regler (engl. Controller)
 _Simulation mit geregelter Steuerung (PID Regler)_
+- Feedback: Aktuelle Tiefe wird gemessen und mit gewünschter Tiefe verglichen
+- Regler berechnet Steuerungskraft basierend auf Differenz (Fehler)
 
 == U-Boot Tiefenregelung: Darstellung im Blockdiagramm
 #[
@@ -169,34 +171,36 @@ _Simulation mit geregelter Steuerung (PID Regler)_
     [],
   )
 ]
-#[
-  #grid(
-    columns: (1fr, 1fr),
-    rows: (1fr, 1fr),
-    gutter: 10pt,
-    figure(
-      image("images/block_diagram_openloop_submarine.png", width: 95%),
-      caption: [Submarine: Open Loop],
-    ),
-    figure(
-      image("images/block_diagram_open_loop_general.png", width: 95%),
-      caption: [General: Open Loop],
-    ),
+== U-Boot Tiefenregelung: Darstellung im Blockdiagrammdback
+#grid(
+  columns: (1fr, 1fr),
+  rows: (1fr, 1fr),
+  gutter: 10pt,
+  figure(
+    image("images/block_diagram_openloop_submarine.png", width: 95%),
+    caption: [Submarine: Open Loop],
+  ),
+  figure(
+    image("images/block_diagram_open_loop_general.png", width: 95%),
+    caption: [General: Open Loop],
+  ),
 
-    figure(
-      image("images/block_submarine_closed_loop.png", width: 95%),
-      caption: [Submarine: Closed Loop],
-    ),
-    figure(
-      image("images/block_diagram_closed_loop_general.png", width: 95%),
-      caption: [General: Closed Loop],
-    ),
-  )
-]
+  figure(
+    image("images/block_submarine_closed_loop.png", width: 95%),
+    caption: [Submarine: Closed Loop],
+  ),
+  figure(
+    image("images/block_diagram_closed_loop_general.png", width: 95%),
+    caption: [General: Closed Loop],
+  ),
+)
+
+= Weitere Konzepte
+Das war ja einfach!
 
 = Abstraktion
+== Warum Abstraktion?
 - Systeme können durch mathematische Modelle abstrahiert werden
-- Theorie anwendbar auf viele verschiedene Systeme. Sobald die Modellierung steht, brauchen Regelungs-Experten nur noch wenig Detailwissen über die Anwendung
 - Erlaubt große Vielfalt von Anwendungsgebieten
   - Tatsächlich U-Boot Steuerung @Slotine_Lohmiller_1998_ContractionAnalysisNonlinearSystems
   - Flugzeug / Raketensteuerung
@@ -205,6 +209,22 @@ _Simulation mit geregelter Steuerung (PID Regler)_
   - Verkehrswesen (zB. Verkehrsflussregelung)
   - Biologische Systeme (zB. Medizintechnik, Erhalt von Ökosystemen @Lotka_Elements_1926
   - Soziale Systeme (zB. Epidemiekontrolle: Analyse von Covid-Ausbreitung via Model Predictive Control, Uni Stuttgart @KOHLER2021525)
+
+== Warum Abstraktion?
+- Sobald die Modellierung steht, können Kybernetisch bewanderte Personen alle diese Systeme regeln, ohne Detailwissen auf den einzelnen Gebieten
+- Kybernetik als "Universalwerkzeugkasten" für viele Anwendungsgebiete
+
+== Modellbasierte Regelung
+- Finde ausreichend akkurates Modell des Systems
+- _"Alle Modelle sind falsch, aber manche sind nützlich"_ -- George Box, Statistiker
+- Modellierung:
+  - Was muss modelliert werden (Physikalische zusammenhänge, Logische implikationen, etc. )
+  - Welcher Detailgrad ist nötig?
+  - Was kann/muss vernachlässigt werden?
+  - Was muss berücksichtigt werden (Störungen, Unsicherheiten, etc.)
+
+== Regelkreis mit Störungen
+#todo BILD
 
 = Systemanalyse
 == Linearität
