@@ -51,11 +51,9 @@ class Submarine(GameObject):
         super().__init__(space)
         self.width = width
         self.height = height
-        self.color = (0, 0, 255)  # Blue color
-        self.mass = 2000
-        # Calculate moment of inertia for a rectangle
+        self.color = (200, 200, 0)
         moment = float("+inf")
-        # Create dynamic body with proper inertia for rotation
+        self.mass = 2000
         self.body = pymunk.Body(
             body_type=pymunk.Body.DYNAMIC,
             mass=self.mass,
