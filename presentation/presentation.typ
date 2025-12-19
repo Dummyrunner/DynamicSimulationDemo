@@ -42,9 +42,9 @@
 
 // Specify `lang` and `font` for the theme if needed.
 #show: buaa-theme.with(
+  config-common(handout: true),
   config-info(
     title: [Kybernetisches Denken],
-    // Alternativ: Ein Tick Kybernetik
     subtitle: [ Eine Einführung ohne mathematisches Bla Bla],
     author: [Dani],
     date: wissen_ist_nacht_datum,
@@ -122,12 +122,12 @@ Schwerpunkt des heutigen Vortrags:
 == U-Boot Tiefenregelung: Problemstellung
 - U-Boot Tiefe soll vorgegebener Linie folgenden
 - Vertikale kraft kann beeinflusst werden
-- _Simulation mit manueller Steuerung (Pfeiltasten)_
+_Simulation mit manueller Steuerung (Pfeiltasten)_
 
 == U-Boot Tiefenregelung: Regelung via Feedback
 - Ziel: Automatische Regelung der Tiefe
 - Anwendung: PID Regler (engl. Controller)
--_Simulation mit geregelter Steuerung (PID Regler)_
+_Simulation mit geregelter Steuerung (PID Regler)_
 
 == U-Boot Tiefenregelung: Darstellung im Blockdiagramm
 #[
@@ -312,7 +312,7 @@ Beispiele:
     #leftmessage[Wenn ich berechne, was mittlerweile passiert sein muss, komme ich auf eine Düsentemperatur von 1450 °C. Das würde einen Ausgangswert von 473 000 N ergeben]
     #rightmessage[Der echte Ausgangswert liegt momentan bei 460 000 N. Deine Schätzung wurde also schon besser]
     #leftmessage[Ok, ich passe die Schätzung die Schätzung durch eine weitere Korrektur an]
-
+    #align(center)[... usw ...]
   ],
   right-content: [Lineares System:\ $dot(x) = A x + B u \ y = C x + D u$ \
     Beobachter-Simulator:
