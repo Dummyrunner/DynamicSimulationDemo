@@ -43,9 +43,9 @@
 // Specify `lang` and `font` for the theme if needed.
 #show: buaa-theme.with(
   config-info(
-    title: [Kybernetik: Was ist das und was soll das?],
+    title: [Kybernetisches Denken],
     // Alternativ: Ein Tick Kybernetik
-    subtitle: [Dynamische Systeme beeinflussen],
+    subtitle: [ Eine Einführung ohne mathematisches Bla Bla],
     author: [Dani],
     date: wissen_ist_nacht_datum,
     institution: [Finsterberg Akademie, Zamonien],
