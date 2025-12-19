@@ -169,9 +169,13 @@ class Game:
         self.reference_signal = WINDOW_HEIGHT / 2
         self.game_state = GameState.PAUSED
         self.frames_since_toggle_counter = 0
-        KP_DEFAULT = -500.0
-        KI_DEFAULT = -10
-        KD_DEFAULT = 0.0
+        KP_DEFAULT = -5000.0
+        KI_DEFAULT = 0.0
+        KD_DEFAULT = -2000.0
+
+        # Control force arrow visualization parameters
+        self.arrow_scale = 0.0001  # Pixels per Newton
+        self.arrow_max_length = 150  # Maximum arrow length in pixels
 
         # Set up display
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
@@ -193,6 +197,15 @@ class Game:
         self.screen.fill((150, 200, 255))
         self.plant.draw(self.screen)
 
+        # Draw control force arrow
+        if self.control_active:
+            self._draw_control_force_arrow(
+                self.plant.submarine.body.position,
+                -self.plant.input.vertical_thrust,
+                self.arrow_scale,
+                self.arrow_max_length,
+            )
+
         # Display current game state
         self._draw_state_indicator()
 
@@ -212,6 +225,76 @@ class Game:
         control_text = f"Control: {control_status}"
         control_surface = font.render(control_text, True, (0, 0, 0))
         self.screen.blit(control_surface, (10, 50))
+
+    def _draw_control_force_arrow(
+        self, sub_pos, force, arrow_scale, arrow_max_length=150
+    ):
+        """Draw an arrow showing the control force magnitude and direction.
+
+        Parameters
+        ----------
+        sub_pos : pymunk.Vec2d
+            Submarine center position
+        force : float
+            Vertical thrust force in Newtons
+        arrow_scale : float
+            Scaling factor (pixels per Newton)
+        arrow_max_length : float, optional
+            Maximum arrow length in pixels (default: 150)
+        """
+        center_x = int(sub_pos.x)
+        center_y = int(sub_pos.y)
+
+        # Calculate arrow length with scaling and clamping
+        arrow_length = min(abs(force) * arrow_scale, arrow_max_length)
+
+        # Determine direction (up for positive, down for negative)
+        if force > 0:
+            end_x = center_x
+            end_y = center_y - int(arrow_length)  # Up
+            arrow_color = (0, 255, 0)  # Green for thrust up
+        elif force < 0:
+            end_x = center_x
+            end_y = center_y + int(arrow_length)  # Down
+            arrow_color = (255, 0, 0)  # Red for thrust down
+        else:
+            return  # No force, don't draw
+
+        # Clamp arrow endpoints to window boundaries
+        end_y = max(0, min(end_y, self.HEIGHT))
+
+        # Draw main arrow line
+        pygame.draw.line(
+            self.screen,
+            arrow_color,
+            (center_x, center_y),
+            (end_x, end_y),
+            3,  # Line width
+        )
+
+        # Draw arrowhead
+        if arrow_length > 10:  # Only draw arrowhead if arrow is long enough
+            arrow_size = 10
+            if force > 0:  # Pointing up
+                pygame.draw.polygon(
+                    self.screen,
+                    arrow_color,
+                    [
+                        (end_x, end_y),
+                        (end_x - arrow_size // 2, end_y + arrow_size),
+                        (end_x + arrow_size // 2, end_y + arrow_size),
+                    ],
+                )
+            else:  # Pointing down
+                pygame.draw.polygon(
+                    self.screen,
+                    arrow_color,
+                    [
+                        (end_x, end_y),
+                        (end_x - arrow_size // 2, end_y - arrow_size),
+                        (end_x + arrow_size // 2, end_y - arrow_size),
+                    ],
+                )
 
     def main_loop(self):
         running = True
