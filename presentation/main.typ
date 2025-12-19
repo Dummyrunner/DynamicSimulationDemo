@@ -97,7 +97,7 @@ sich über lebendige Wesen oder Maschinen handelt_
 
 == Dieser Vortrag: Thema
 Schwerpunkt des heutigen Vortrags:
-- Steuerung und Regelung technischer Systeme
+- Regelung technischer Systeme
 - Ausblick zu verschiedenen Methoden und Herausforderungen in der Kybernetik
 
 == Dieser Vortrag: Darreichungsform
@@ -106,18 +106,106 @@ Schwerpunkt des heutigen Vortrags:
     - Kybernetik ist eine sehr mathematiklastige Disziplin
       - Um die gezeigten Zusammenhänge mathematisch präzise darzustellen, ist viel Vorwissen nötig
       - Hier werden die Zusammenhänge und Ideen intuitiv, ohne mathematische Grundvorraussetzungen dargestellt
-      - _Rechte Spalte: Mathematische Darstellungen für fans, *nicht* nötig fürs Verständnis_
+      - _Rechte Spalte: Mathematische Darstellungen für Fans, *nicht* nötig fürs Verständnis_
   ],
   right-content: [Beispiel:\
     $cal(L){f(t)} = integral_0^infinity f(t) e^(-s t) dif t$ \
     Unnötige mathematische Ausführungen für unangenehme Besserwisser],
 )
 
-// - Für Fans und Experten: Manchmal Formel-Areal auf der rechten Seite
 
 = Dynamische Systeme
 == Was ist ein dynamisches System?
 #todo
+
+= Beispiel: U-Boot Tiefenregelung
+== U-Boot Tiefenregelung: Problemstellung
+- U-Boot Tiefe soll vorgegebener Linie folgenden
+- Vertikale kraft kann beeinflusst werden
+- _Simulation mit manueller Steuerung (Pfeiltasten)_
+
+== U-Boot Tiefenregelung: Regelung via Feedback
+- Ziel: Automatische Regelung der Tiefe
+- Anwendung: PID Regler (engl. Controller)
+-_Simulation mit geregelter Steuerung (PID Regler)_
+
+== U-Boot Tiefenregelung: Darstellung im Blockdiagramm
+#[
+  #pause
+  #grid(
+    columns: (1fr, 1fr),
+    rows: (1fr, 1fr),
+    gutter: 10pt,
+    figure(
+      image("images/block_diagram_openloop_submarine.png", width: 95%),
+      caption: [Submarine: Open Loop],
+    ),
+    [],
+
+    figure(
+      image("images/block_submarine_closed_loop.png", width: 95%),
+      caption: [Submarine: Closed Loop],
+    ),
+    [],
+  )
+]
+#[
+  #pause
+  #grid(
+    columns: (1fr, 1fr),
+    rows: (1fr, 1fr),
+    gutter: 10pt,
+    figure(
+      image("images/block_diagram_openloop_submarine.png", width: 95%),
+      caption: [Submarine: Open Loop],
+    ),
+    figure(
+      image("images/block_diagram_open_loop_general.png", width: 95%),
+      caption: [General: Open Loop],
+    ),
+
+    figure(
+      image("images/block_submarine_closed_loop.png", width: 95%),
+      caption: [Submarine: Closed Loop],
+    ),
+    [],
+  )
+]
+#[
+  #pause
+  #grid(
+    columns: (1fr, 1fr),
+    rows: (1fr, 1fr),
+    gutter: 10pt,
+    figure(
+      image("images/block_diagram_openloop_submarine.png", width: 95%),
+      caption: [Submarine: Open Loop],
+    ),
+    figure(
+      image("images/block_diagram_open_loop_general.png", width: 95%),
+      caption: [General: Open Loop],
+    ),
+
+    figure(
+      image("images/block_submarine_closed_loop.png", width: 95%),
+      caption: [Submarine: Closed Loop],
+    ),
+    figure(
+      image("images/block_diagram_closed_loop_general.png", width: 95%),
+      caption: [General: Closed Loop],
+    ),
+  )
+]
+
+= Abstraktion
+- Systeme können durch mathematische Modelle abstrahiert werden
+- Theorie anwendbar auf viele verschiedene Systeme. Sobald die Modellierung steht, brauchen Regelungs-Experten nur noch wenig Detailwissen über die Anwendung
+- Erlaubt große Vielfalt von Anwendungsgebieten
+  - Flugzeug / Raketensteuerung
+  - Chemische Reaktoren
+  - Wirtschaftssysteme
+  - Biologische Systeme (zB. Medizintechnik, Erhalt von Ökosystemen @Lotka_Elements_1926
+  - Soziale Systeme (zB. Epidemiekontrolle @KOHLER2021525)
 
 = Systemanalyse
 == Linearität
@@ -203,8 +291,8 @@ Beispiele:
     #rightmessage[Der Echte Ausgangswert ist aber nur 450 000 N]
     #leftmessage[Ok, aus dem Unterschied (50 000N) berechne ich eine Korrektur]
     #leftmessage[Wenn ich berechne, was mittlerweile passiert sein muss, komme ich auf eine Düsentemperatur von 1450 °C. Das würde einen Ausgangswert von 473 000 N ergeben]
-    #rightmessage[Der echte Ausgangswert liegt momentan bei 460 000 N. Deine Schäatzung wurde also schon  besser]
-    #leftmessage[Ok, ich korrigiere die Schätzung durch eine Weitere Korrektur]
+    #rightmessage[Der echte Ausgangswert liegt momentan bei 460 000 N. Deine Schätzung wurde also schon besser]
+    #leftmessage[Ok, ich passe die Schätzung die Schätzung durch eine weitere Korrektur an]
 
   ],
   right-content: [Lineares System:\ $dot(x) = A x + B u \ y = C x + D u$ \
@@ -220,19 +308,20 @@ Beispiele:
 = Relevanz / Zukunft
 == Jetzt haben wir KI: Brauchen wir noch Kontrolltheorie?
 - *Vorteile von KI Methoden*:
-  - Lernen aus großen mengen von Daten. Mechanismen / Modelle müssen nicht mehr von Menschen verstanden werden
+  - Lernen aus großen Mengen von Daten. Mechanismen / Modelle müssen nicht mehr von Menschen verstanden werden
   - Computertechnologie hat potentielle Anwendungsgebiete stark ausgeweitet --> "Probleme mit Rechenpower erschlagen"
   - Kontrolltheoretische Methoden wurden in manchen Bereichen durch KI abgelöst
     - Computer Vision
     - Autonomes Fahren _"End to End"_
 
 == Jetzt haben wir KI: Brauchen wir noch Kontrolltheorie?
-- Machine Learning / LLM Modelle sind oft "Black Boxen"
+- Machine Learning / LLM Modelle sind meistens "Black Boxen"
 - KI Algorithmen sind oft sehr *unrobust* gegenüber Störungen. Beispiel: Bilderkennung @ilyas2019adversarialexamplesbugsfeatures
   #align(center)[#figure(
     image("images/adversarial_example_dog_to_cat.png", width: 30%),
     caption: [Kleine Störung, große Wirkung, von: https://gradientscience.org/adv/],
   )]
+- Schwächen der KI Algorithmen oft schwer vorrauszusagen
 - KI integrität / Sicherheit oft schwer zu garantieren (_"Dieser Flug wird mit einer Wahrscheinlichkeit von 98% nicht abstürzen"_)
 
 == Also doch Kontrolltheorie
