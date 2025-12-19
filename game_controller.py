@@ -61,7 +61,8 @@ class ControllerPID(GameControllerBase):
 
     def visualize_control_input(self, display, control_input):
         # Visualization code for PID control input
-        print(f"PI Control Input: {control_input}, Integral: {self.integral}")
+        # print(f"PI Control Input: {control_input}, Integral: {self.integral}")
+        pass
 
 
 class StateFeedbackController(GameControllerBase):
@@ -80,53 +81,3 @@ class StateFeedbackController(GameControllerBase):
     def visualize_control_input(self, control_input):
         # Visualization code for state feedback control input
         print(f"State Feedback Control Input: {control_input}")
-
-
-# def draw_control_arrow(self, control_signal):
-#     """Draw an arrow representing the control signal direction and magnitude."""
-#     if control_signal == (0, 0):
-#         return
-
-#     # Get cart's center position
-#     cart_pos = self.cart.body.position
-
-#     # Scale factor to make arrow visible (adjust this value to change arrow length)
-#     scale = 5  # Increased scale to make arrow more visible
-
-#     # Calculate arrow end point
-#     arrow_end = (
-#         cart_pos.x + control_signal[0] * scale,
-#         cart_pos.y + control_signal[1] * scale,
-#     )
-
-#     # Draw main line of arrow
-#     pygame.draw.line(
-#         self.screen,
-#         (255, 0, 0),  # Red color
-#         (cart_pos.x, cart_pos.y),
-#         arrow_end,
-#         2,  # Line thickness
-#     )
-
-#     # Calculate and draw arrow head
-#     if control_signal[0] != 0:  # Only if we have horizontal movement
-#         # Arrow head size
-#         head_size = 10
-#         angle = math.pi / 6  # 30 degrees for arrow head
-
-#         # Direction of the arrow
-#         direction = 1 if control_signal[0] > 0 else -1
-
-#         # Calculate arrow head points
-#         head_point1 = (
-#             arrow_end[0] - direction * head_size * math.cos(angle),
-#             arrow_end[1] - head_size * math.sin(angle),
-#         )
-#         head_point2 = (
-#             arrow_end[0] - direction * head_size * math.cos(angle),
-#             arrow_end[1] + head_size * math.sin(angle),
-#         )
-
-#         # Draw arrow head
-#         pygame.draw.line(self.screen, (255, 0, 0), arrow_end, head_point1, 2)
-#         pygame.draw.line(self.screen, (255, 0, 0), arrow_end, head_point2, 2)
