@@ -29,6 +29,7 @@
       #left-content
     ]
   ][
+    #meanwhile
     #text(fill: right-text-color)[
       #right-content
     ]
@@ -42,14 +43,13 @@
 
 // Specify `lang` and `font` for the theme if needed.
 #show: buaa-theme.with(
-  config-common(handout: true),
+  // config-common(handout: true),
   config-info(
     title: [Kybernetisches Denken],
     subtitle: [ Eine Einführung ohne mathematisches Bla Bla],
     author: [Dani],
     date: wissen_ist_nacht_datum,
     institution: [Finsterberg Akademie, Zamonien],
-    // Disable automatic insertion of the outline slide before each section
     outline: false,
   ),
 )
@@ -131,7 +131,6 @@ _Simulation mit geregelter Steuerung (PID Regler)_
 
 == U-Boot Tiefenregelung: Darstellung im Blockdiagramm
 #[
-  #pause
   #grid(
     columns: (1fr, 1fr),
     rows: (1fr, 1fr),
@@ -150,7 +149,6 @@ _Simulation mit geregelter Steuerung (PID Regler)_
   )
 ]
 #[
-  #pause
   #grid(
     columns: (1fr, 1fr),
     rows: (1fr, 1fr),
@@ -172,7 +170,6 @@ _Simulation mit geregelter Steuerung (PID Regler)_
   )
 ]
 #[
-  #pause
   #grid(
     columns: (1fr, 1fr),
     rows: (1fr, 1fr),
@@ -288,11 +285,17 @@ Beispiele:
 
 #two-column-slide(
   left-content: [
+    #pause
     #leftmessage[Hi, ich bin der Beobachter!]
+    #pause
     #rightmessage[Moin, ich bin das System!]
+    #pause
     #rightmessage[Was ist die Düsentemperatour?]
+    #pause
     #leftmessage[Ich rate mal: 1500 °C]
+    #pause
     #rightmessage[Angenommen, das würde Stimmen, was wäre dann der Ausgangswert des Systems?]
+    #pause
     #leftmessage[Das wäre dann 500 000 N]
 
   ],
@@ -307,11 +310,17 @@ Beispiele:
 
 #two-column-slide(
   left-content: [
+    #pause
     #rightmessage[Der Echte Ausgangswert ist aber nur 450 000 N]
+    #pause
     #leftmessage[Ok, aus dem Unterschied (50 000N) berechne ich eine Korrektur]
+    #pause
     #leftmessage[Wenn ich berechne, was mittlerweile passiert sein muss, komme ich auf eine Düsentemperatur von 1450 °C. Das würde einen Ausgangswert von 473 000 N ergeben]
+    #pause
     #rightmessage[Der echte Ausgangswert liegt momentan bei 460 000 N. Deine Schätzung wurde also schon besser]
+    #pause
     #leftmessage[Ok, ich passe die Schätzung die Schätzung durch eine weitere Korrektur an]
+    #pause
     #align(center)[... usw ...]
   ],
   right-content: [Lineares System:\ $dot(x) = A x + B u \ y = C x + D u$ \
