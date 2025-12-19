@@ -57,7 +57,7 @@ class ControllerPID(GameControllerBase):
         control_signal = (
             self.kp * control_error + self.ki * self.integral + self._kd * derivative
         )
-        print(f"PI Control Input: {control_signal}, Integral: {self.integral}")
+
         return control_signal
 
     def visualize_control_input(self, display, control_input):
