@@ -11,4 +11,5 @@ dependencies = [
     "pygame-widgets>=1.2.3",
     "pymunk>=7.1.0",
     "pytest>=9.0.0",
+    "typst>=0.14.4",
 ]
