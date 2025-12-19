@@ -201,11 +201,13 @@ Schwerpunkt des heutigen Vortrags:
 - Systeme können durch mathematische Modelle abstrahiert werden
 - Theorie anwendbar auf viele verschiedene Systeme. Sobald die Modellierung steht, brauchen Regelungs-Experten nur noch wenig Detailwissen über die Anwendung
 - Erlaubt große Vielfalt von Anwendungsgebieten
+  - Tatsächlich U-Boot Steuerung @Slotine_Lohmiller_1998_ContractionAnalysisNonlinearSystems
   - Flugzeug / Raketensteuerung
-  - Chemische Reaktoren
+  - Chemische Reaktoren @Slotine_Lohmiller_1998_ContractionAnalysisNonlinearSystems
   - Wirtschaftssysteme
+  - Verkehrswesen (zB. Verkehrsflussregelung)
   - Biologische Systeme (zB. Medizintechnik, Erhalt von Ökosystemen @Lotka_Elements_1926
-  - Soziale Systeme (zB. Epidemiekontrolle @KOHLER2021525)
+  - Soziale Systeme (zB. Epidemiekontrolle: Analyse von Covid-Ausbreitung via Model Predictive Control, Uni Stuttgart @KOHLER2021525)
 
 = Systemanalyse
 == Linearität
@@ -250,6 +252,8 @@ Schwerpunkt des heutigen Vortrags:
 
 Für *Lineare Systeme*: Kriterien, die (für Computer) leicht zu überprüfen sind (Kalman Matrix Rang kriterien)
 
+*Beobachtbare* größen können manchmal nicht direkt gemessen werden, aber dennoch rekonstruiert: Beobachter
+
 = Beobachter
 == Größen nicht zu messen: Was tun?
 Beispiele:
@@ -284,10 +288,25 @@ Beispiele:
 
 #two-column-slide(
   left-content: [
+    #leftmessage[Hi, ich bin der Beobachter!]
+    #rightmessage[Moin, ich bin das System!]
     #rightmessage[Was ist die Düsentemperatour?]
     #leftmessage[Ich rate mal: 1500 °C]
     #rightmessage[Angenommen, das würde Stimmen, was wäre dann der Ausgangswert des Systems?]
     #leftmessage[Das wäre dann 500 000 N]
+
+  ],
+  right-content: [Lineares System:\ $dot(x) = A x + B u \ y = C x + D u$ \
+    Beobachter-Simulator:
+    $dot(hat(x)) = A hat(x) + B u \ hat(y) = C hat(x) + D u$ \
+    Abgleich, wie gut die Schätzung ist:
+    $abs(hat(y) - y) = 0?$ \
+    Führe Korrektur ein: \
+    $dot(hat(x)) = A hat(x) + B u + L (y - hat(y))$ \ Mit L so gewählt, dass die Fehlerdynamik  $dot(e) = dot(y) - dot(hat(y))$ stabile Eigenwerte hat],
+)
+
+#two-column-slide(
+  left-content: [
     #rightmessage[Der Echte Ausgangswert ist aber nur 450 000 N]
     #leftmessage[Ok, aus dem Unterschied (50 000N) berechne ich eine Korrektur]
     #leftmessage[Wenn ich berechne, was mittlerweile passiert sein muss, komme ich auf eine Düsentemperatur von 1450 °C. Das würde einen Ausgangswert von 473 000 N ergeben]
@@ -303,7 +322,6 @@ Beispiele:
     Führe Korrektur ein: \
     $dot(hat(x)) = A hat(x) + B u + L (y - hat(y))$ \ Mit L so gewählt, dass die Fehlerdynamik  $dot(e) = dot(y) - dot(hat(y))$ stabile Eigenwerte hat],
 )
-
 
 = Relevanz / Zukunft
 == Jetzt haben wir KI: Brauchen wir noch Kontrolltheorie?
@@ -338,26 +356,6 @@ Beispiele:
 - Youtube Video Serie *Control Systems in Practice*, Mathworks: https://youtu.be/ApMz1-MK9IQ?si=CdSrJPCsdLwsGXnT
 - Podcast *inControl*, Roberto Padoan, Interviews mit führenden Experten über deren jeweiliges Spezialgebiet: https://www.incontrolpodcast.com/
 
-= Playground
-== Two-Column Slide (2/3 - 1/3 split)
-
-#slide(composer: (2fr, 1fr))[
-  == Left Column (2/3 width)
-
-  This is the main content area that takes up approximately 66% of the slide width.
-
-  #image("images/CyberneticsSearch/KunstKybernetik.jpg", width: 80%)
-
-  You can include detailed explanations, code examples, or large images here.
-][
-  == Right Column (1/3 width)
-
-  #text(fill: gray)[
-    Linear System: \
-    $dot(x) = A x + B u \ y = C x$
-  ]
-]
-
 == Quellen
 #bibliography("sources.bib")
 == Software
@@ -367,4 +365,5 @@ Beispiele:
 - python.control
 - Präsentation: typst
 
-- programmcode: github.....
+- Programmcode für Simulationen:
+  https://github.com/Dummyrunner/DynamicSimulationDemo
