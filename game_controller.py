@@ -53,6 +53,7 @@ class ControllerPID(GameControllerBase):
     def get_control_input(self, control_error):
         self.integral += control_error * self.sample_time
         derivative = (control_error - self.previous_error) / self.sample_time
+        self.previous_error = control_error
         control_signal = (
             self.kp * control_error + self.ki * self.integral + self._kd * derivative
         )
