@@ -134,9 +134,9 @@ class SubmarinePlant(PlantBase):
         keys = pygame.key.get_pressed()
         vertical_thrust = 0.0
         if keys[pygame.K_UP]:
-            vertical_thrust += self.model_params.KEY_FORCE_SCALE
-        if keys[pygame.K_DOWN]:
             vertical_thrust -= self.model_params.KEY_FORCE_SCALE
+        if keys[pygame.K_DOWN]:
+            vertical_thrust += self.model_params.KEY_FORCE_SCALE
         return vertical_thrust
 
     def _create_objects(self, window_size, space):
