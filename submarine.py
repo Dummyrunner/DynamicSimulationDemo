@@ -2,12 +2,13 @@ import pygame
 import pymunk
 import sys
 from enum import Enum
-from abc import ABC, abstractmethod
 from typing import NamedTuple
 from dataclasses import dataclass
 from pymunk import Vec2d
 from physical_objects import Submarine
 from game_controller import ControllerPID
+from plant_base import PlantBase
+
 
 SAMPLE_TIME = 1 / 60.0
 WINDOW_WIDTH = 1200
@@ -34,26 +35,6 @@ class DefaultSubmarineModelParams:
     SUMBARINE_MASS: float = 9
     SUBMARINE_HORIZONTAL_SPEED: float = 100
     KEY_FORCE_SCALE: float = 5e5
-
-
-class PlantBase(ABC):
-    def __init__(self, sample_time):
-        self.sample_time: float = sample_time
-        self.non_physical_objects: list = []
-        self.all_physical_objects: list = []
-        self.n_inputs: int = 0
-        self.n_outputs: int = 0
-
-    @abstractmethod
-    def step(self, time_delta):
-        pass
-
-    def set_input(self, input_data):
-        pass
-
-    @abstractmethod
-    def get_output(self):
-        pass
 
 
 class VisualObject:

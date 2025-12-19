@@ -2,7 +2,7 @@ import pygame
 import pymunk
 from pymunk import Vec2d
 from typing import NamedTuple
-from abc import ABC, abstractmethod
+from plant_base import PlantBase
 from physical_objects import PinJointConnection, Ball, DynamicCart
 import math_helpers
 from dataclasses import dataclass
@@ -74,26 +74,6 @@ class StaticLine(VisualObject):
         pygame.draw.line(
             screen, self.color, self.position, self.end_pos, self.thickness
         )
-
-
-class PlantBase(ABC):
-    def __init__(self, sample_time):
-        self.sample_time: float = sample_time
-        self.non_physical_objects: list = []
-        self.all_physical_objects: list = []
-        self.n_inputs: int = 0
-        self.n_outputs: int = 0
-
-    @abstractmethod
-    def step(self, time_delta):
-        pass
-
-    def set_input(self, input_data):
-        pass
-
-    @abstractmethod
-    def get_output(self):
-        pass
 
 
 @dataclass
