@@ -445,7 +445,7 @@ Beispiele:
 - Einstiegsthema: Lineare Kontrolltheorie / linear control
 - Vorlesung Uni Washington: *Linear Systems (UW ME 547)*,  https://faculty.washington.edu/chx/teaching/me547/
 - Youtube Video Serie *Control Systems in Practice*, Mathworks: https://youtu.be/ApMz1-MK9IQ?si=CdSrJPCsdLwsGXnT
-- Podcast *inControl*, Roberto Padoan, Interviews mit führenden Experten über deren jeweiliges Spezialgebiet: https://www.incontrolpodcast.com/
+- Podcast *inControl*, Alberto Padoan, Interviews mit führenden Experten über deren jeweiliges Spezialgebiet: https://www.incontrolpodcast.com/
 
 == Quellen
 #bibliography("sources.bib")
