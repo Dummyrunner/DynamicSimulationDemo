@@ -42,6 +42,16 @@ class ControllerPID(GameControllerBase):
             raise TypeError("ki must be a number")
         self._ki = float(value)
 
+    @property
+    def kd(self) -> float:
+        return self._kd
+
+    @kd.setter
+    def kd(self, value: float):
+        if not isinstance(value, (int, float)):
+            raise TypeError("kd must be a number")
+        self._kd = float(value)
+
     def get_control_input(self, control_error):
         self.integral += control_error * self.sample_time
         derivative = (control_error - self.previous_error) / self.sample_time
@@ -49,7 +59,6 @@ class ControllerPID(GameControllerBase):
         control_signal = (
             self.kp * control_error + self.ki * self.integral + self._kd * derivative
         )
-
         return control_signal
 
 

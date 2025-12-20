@@ -260,7 +260,7 @@ class Game:
 
         # Display current game state
         self._draw_state_indicator()
-
+        self._draw_pid_gains()
         # Update display
         pygame.display.flip()
         self.clock.tick(60)
@@ -277,6 +277,16 @@ class Game:
         control_text = f"Control: {control_status}"
         control_surface = font.render(control_text, True, (255, 255, 255))
         self.screen.blit(control_surface, (10, 50))
+
+    def _draw_pid_gains(self):
+        """Draw PID gain values at the bottom of the window."""
+        font = pygame.font.Font(None, 24)
+        gains_text = f"PID Gains: K_p: {self.controller.kp:.0f},  K_i: {self.controller.ki:.0f},  K_d: {self.controller.kd:.0f}"
+        gains_surface = font.render(gains_text, True, (255, 255, 255))
+        text_rect = gains_surface.get_rect(
+            centerx=self.WIDTH // 6, bottom=self.HEIGHT - 10
+        )
+        self.screen.blit(gains_surface, text_rect)
 
     def _display_least_squares_score(self, score):
         font = pygame.font.Font(None, 48)
