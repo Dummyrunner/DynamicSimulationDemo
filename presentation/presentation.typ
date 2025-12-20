@@ -86,7 +86,7 @@ Was ist Kybernetik? Einfach mal googeln:
     image("images/CyberneticsSearch/kybhand.jpg", width: 60%),
     caption: [https://www.gkm.uni-stuttgart.de/techkyb/.content/img/kybhand.jpg],
   ),
-  text[Ok das war noch nicht sehr hilfreich!],
+  text[*Ok das war noch nicht sehr hilfreich!*],
 )
 
 == Kybernetik: Definition
@@ -122,14 +122,30 @@ Schwerpunkt des heutigen Vortrags:
 == U-Boot Tiefenregelung: Problemstellung
 - U-Boot Tiefe soll vorgegebener Linie folgenden
 - Vertikale Kraft kann beeinflusst werden
-_Simulation mit manueller Steuerung (Pfeiltasten)_
+*Demo*: _Simulation mit manueller Steuerung (Pfeiltasten)_
 
 == U-Boot Tiefenregelung: Regelung via Feedback
 - Ziel: Automatische Regelung der Tiefe
-- Anwendung: PID Regler (engl. Controller)
-_Simulation mit geregelter Steuerung (PID Regler)_
+- Anwendung:* PID Regler*
+  - *Proportionaler Anteil (P)*: Reagiert auf aktuellen Fehler
+  - *Integraler Anteil (I)*: Reagiert auf aufsummierten Fehler über Zeit
+  - *Differentieller Anteil (D)*: Reagiert auf Änderungsrate des Fehlers
+  Verstärkungen der einzelnen Anteile *P, I, D* müssen gewählt werden!
+
+*Demo*: _Simulation mit geregelter Steuerung (PID Regler)_
 - Feedback: Aktuelle Tiefe wird gemessen und mit gewünschter Tiefe verglichen
 - Regler berechnet Steuerungskraft basierend auf Differenz (Fehler)
+
+= Weitere Konzepte
+== Warum nicht Feierabend?
+#tblock(
+  title: "Kritische Selbsthinterfragung",
+)[Das war ja sehr einfach? Warum soll man dann eine ganze Wissenschaft draus machen?]
+Gute Gründe:
+- Betrachtet wurde ein sehr, sehr einfaches Beispiel
+- In der Praxis sind Systeme oft viel komplexer
+- Störungen, Unsicherheiten, Verzögerungen sind in der Praxis unvermeidbar
+
 
 == U-Boot Tiefenregelung: Darstellung im Blockdiagramm
 #[
@@ -194,10 +210,9 @@ _Simulation mit geregelter Steuerung (PID Regler)_
     caption: [General: Closed Loop],
   ),
 )
+== Gefahr: Instabilität!
 
-= Weitere Konzepte
-Das war ja einfach!
-
+*Demo*: _Simulation mit instabilem Regler (hohe P Anteile)_
 = Abstraktion
 == Warum Abstraktion?
 - Systeme können durch mathematische Modelle abstrahiert werden
@@ -224,9 +239,20 @@ Das war ja einfach!
   - Was muss berücksichtigt werden (Störungen, Unsicherheiten, etc.)
 
 == Regelkreis mit Störungen
-#todo BILD
+#image("images/block_diagram_general_closed_loop_distorted.png", width: 100%)
 
 = Systemanalyse
+== Systemidentifikation
+
+- Wie finde ich ein Modell für ein reales System?
+- Was berücksichtige ich, was nicht?
+- Gibt es Unsicherheiten:
+  - Parameter Unsicherheiten (zB. Masse des U-Boots variiert je nach Beladung)
+  - Modell Unsicherheiten (zB. Nicht modellierte Effekte wie Strömungswiderstand)
+  - Messrauschen (zB. Sensoren haben begrenzte Genauigkeit)
+  - ...
+
+
 == Linearität
 #tblock(title: "Definition")[
   Ein System ist *linear*, wenn es die folgenden 2 Eigenschaften erfüllt:
