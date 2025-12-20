@@ -1,6 +1,7 @@
 import pygame
 import pymunk
 import sys
+import numpy as np
 from enum import Enum
 from typing import NamedTuple
 from dataclasses import dataclass
@@ -14,9 +15,9 @@ SAMPLE_TIME = 1 / 60.0
 WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
 
-KP_DEFAULT = -6000.0
-KI_DEFAULT = 0.0
-KD_DEFAULT = -6000.0
+KP_DEFAULT = -4000.0
+KI_DEFAULT = -10
+KD_DEFAULT = -5000
 
 
 class GameState(Enum):
@@ -34,7 +35,7 @@ class DefaultSubmarineModelParams:
     SUBMARINE_HEIGHT: float = 20
     SUMBARINE_MASS: float = 9
     SUBMARINE_HORIZONTAL_SPEED: float = 100
-    KEY_FORCE_SCALE: float = 5e5
+    KEY_FORCE_SCALE: float = 1e6
 
 
 class VisualObject:
@@ -97,9 +98,12 @@ class SubmarinePlant(PlantBase):
         self.window_with = window_size[0]
 
     def step(self, time_delta):
-        self.submarine.body.apply_force_at_local_point(
-            (0, self.input.vertical_thrust), (0, 0)
-        )
+        thrust = self.input.vertical_thrust
+        input_bound = self.model_params.KEY_FORCE_SCALE
+        lower_bound = -input_bound
+        upper_bound = input_bound
+        saturated_thrust = np.clip(lower_bound, upper_bound, thrust)
+        self.submarine.body.apply_force_at_local_point((0, saturated_thrust), (0, 0))
         self.space.step(time_delta)
 
     def get_output(self):
