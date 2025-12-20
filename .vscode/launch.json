@@ -30,6 +30,16 @@
             "cwd": "${workspaceFolder}",
             "env": {},
             "python": "${workspaceFolder}/.venv/bin/python3"
+        },
+        {
+            "name": "Debug-Run Submarine Instable",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/submarine_instable.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "python": "${workspaceFolder}/.venv/bin/python3"
         }
     ]
 }
