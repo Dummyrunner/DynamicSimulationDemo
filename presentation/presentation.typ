@@ -60,7 +60,7 @@
   // config-common(handout: true),
   config-info(
     title: [Kybernetisches Denken],
-    subtitle: [ Eine Einführung ohne mathematisches Bla Bla],
+    subtitle: [Eine Einführung ohne mathematisches Bla Bla],
     author: [Dani],
     date: wissen_ist_nacht_datum,
     institution: [Finsterberg Akademie, Zamonien],
@@ -146,12 +146,16 @@ Schwerpunkt des heutigen Vortrags:
 == U-Boot Tiefenregelung: Problemstellung
 - U-Boot Tiefe soll vorgegebener Linie folgenden
 - Vertikale Kraft kann beeinflusst werden
+#pause
 #with-tech-logos()[
   *Demo*: _Simulation mit manueller Steuerung (Pfeiltasten)_
 ]
 == U-Boot Tiefenregelung: Regelung via Feedback
 - Ziel: Automatische Regelung der Tiefe
-- Anwendung:* PID Regler*
+#tblock(title: "Feedback")[
+  Bestimme Steuerungskraft (ehem. bestimmt durch Tastendruck) basierend auf aktuellem Fehler]
+
+- Wie Steuerungssignal berechnen? -> * PID Regler*
   - *Proportionaler Anteil (P)*: Reagiert auf aktuellen Fehler
   - *Integraler Anteil (I)*: Reagiert auf aufsummierten Fehler über Zeit
   - *Differentieller Anteil (D)*: Reagiert auf Änderungsrate des Fehlers
@@ -170,9 +174,11 @@ Gute Gründe:
 - Betrachtet wurde ein sehr, sehr einfaches Beispiel
 - In der Praxis sind Systeme oft viel komplexer
 - Störungen, Unsicherheiten, Verzögerungen sind in der Praxis unvermeidbar
+- Auch scheinbar sinnvolle Regelungen können kontraproduktiv sein
+
 == Gefahr: Instabilität!
 #with-tech-logos()[
-  *Demo*: _Simulation mit instabilem Regler (hohe P Anteile)_]
+  *Demo*: _Simulation mit kontraproduktiv eingestelltem Regler (hohe P Anteile)_]
 
 == U-Boot Tiefenregelung: Darstellung im Blockdiagramm
 #[
@@ -241,22 +247,33 @@ Gute Gründe:
 = Abstraktion
 == Warum Abstraktion?
 - Systeme können durch mathematische Modelle abstrahiert werden
+#pause
 - Erlaubt große Vielfalt von Anwendungsgebieten
+  #pause
   - Tatsächlich U-Boot Steuerung @Slotine_Lohmiller_1998_ContractionAnalysisNonlinearSystems
+  #pause
   - Flugzeug / Raketensteuerung
-  - Chemische Reaktoren @Slotine_Lohmiller_1998_ContractionAnalysisNonlinearSystems
+  #pause
+  - Chemische Reaktoren
+  @Slotine_Lohmiller_1998_ContractionAnalysisNonlinearSystems
+  #pause
   - Wirtschaftssysteme
+  #pause
   - Verkehrswesen (zB. Verkehrsflussregelung)
+  #pause
   - Biologische Systeme (zB. Medizintechnik, Erhalt von Ökosystemen @Lotka_Elements_1926
+  #pause
   - Soziale Systeme (zB. Epidemiekontrolle: Analyse von Covid-Ausbreitung via Model Predictive Control, Uni Stuttgart @KOHLER2021525)
 
 == Warum Abstraktion?
-- Sobald die Modellierung steht, können Kybernetisch bewanderte Personen alle diese Systeme regeln, ohne Detailwissen auf den einzelnen Gebieten
-- Kybernetik als "Universalwerkzeugkasten" für viele Anwendungsgebiete
+- Sobald die Modellierung steht, können kybernetisch bewanderte Personen alle diese Systeme regeln, ohne Detailwissen auf den einzelnen Gebieten
+- Kybernetik als "Universalwerkzeug" für viele Anwendungsgebiete
 
 == Modellbasierte Regelung
 - Finde ausreichend akkurates Modell des Systems
+#pause
 - _"Alle Modelle sind falsch, aber manche sind nützlich"_ -- George Box, Statistiker
+#pause
 - Modellierung:
   - Was muss modelliert werden (Physikalische zusammenhänge, Logische implikationen, etc. )
   - Welcher Detailgrad ist nötig?
@@ -268,9 +285,10 @@ Gute Gründe:
 
 = Systemanalyse
 == Systemidentifikation
-
 - Wie finde ich ein Modell für ein reales System?
+#pause
 - Was berücksichtige ich, was nicht?
+#pause
 - Gibt es Unsicherheiten:
   - Parameter Unsicherheiten (zB. Masse des U-Boots variiert je nach Beladung)
   - Modell Unsicherheiten (zB. Nicht modellierte Effekte wie Strömungswiderstand)
@@ -310,8 +328,11 @@ Gute Gründe:
 
 == Stabilität
 - Gleichgewichtszustände (engl. _Equilibria_)
+  #pause
   - Stabil (System verbleibt in der Nähe / Strebt zurück wenn abglenkt)
+  #pause
   - Nicht Stabil (System entfernt sich weiter, wenn abgelenkt)
+  #pause
   - Grenzstabil (System bleibt in der Nähe, zB auf periodischer Bahn)
 
 == Steuerbarkeit / Beobachtbarkeit
