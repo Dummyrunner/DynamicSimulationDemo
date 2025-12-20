@@ -16,7 +16,7 @@ WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
 
 KP_DEFAULT = -4000.0
-KI_DEFAULT = -10
+KI_DEFAULT = 0
 KD_DEFAULT = -5000
 
 
@@ -78,6 +78,75 @@ class SubmarineState(NamedTuple):
     vertical_velocity: float
 
 
+class ReferenceSignal:
+    """Reference Signal class that allows to define a reference Signal for the submarine setup,
+    where the can be defined for each horizontal position."""
+
+    def __init__(self, mapping):
+        self.mapping = mapping
+
+    def evaluate(self, x_position: int) -> float:
+        return self.mapping(x_position)
+
+    def draw(
+        self, screen: pygame.Surface, window_width: int, window_height: int
+    ) -> None:
+        """Draw the reference signal trajectory across the screen.
+
+        For each x coordinate from 0 to window_width, marks the point
+        (x, reference_value(x)) with a colored pixel to visualize the reference trajectory.
+
+        Args:
+            screen: pygame Surface to draw on
+            window_width: Width of the window in pixels
+            window_height: Height of the window in pixels
+        """
+        for x in range(window_width):
+            y = self.evaluate(x)
+            y_clamped = max(0, min(int(y), window_height - 1))
+            pygame.draw.circle(
+                screen,
+                (150, 0, 0),
+                (x, y_clamped),
+                radius=1,
+            )
+
+
+def _create_constant_reference_mapping(window_height: int):
+    """Create a constant reference mapping function to configure reference signal.
+
+    Args:
+        window_height: Height of the window in pixels
+    """
+    return lambda x_position: window_height / 2
+
+
+def _create_step_reference_mapping(
+    window_height: int, step_height: float, step_position: float
+):
+    """Create a step reference mapping function configure reference signal.
+
+    Args:
+        window_height: Height of the window in pixels
+        step_height: Height of the step in pixels
+        step_position: Horizontal position where the step occurs
+    """
+
+    return (
+        lambda x_position: window_height / 2
+        if x_position < step_position
+        else window_height / 2 + step_height
+    )
+
+
+def _create_sine_reference_mapping(
+    amplitude: float, frequency: float, phase: float, offset: float
+):
+    return (
+        lambda x_position: amplitude * np.sin(frequency * x_position + phase) + offset
+    )
+
+
 class SubmarinePlant(PlantBase):
     def __init__(
         self,
@@ -91,6 +160,9 @@ class SubmarinePlant(PlantBase):
         self.model_params = model_params
         self.n_inputs: int = 1
         self.n_outputs: int = 1
+        self.window_height = window_size[1]
+        self.window_width = window_size[0]
+
         self._create_objects(window_size)
         self.input = SubmarineInput(0)
         self.output = SubmarineOutput(0)
@@ -98,6 +170,7 @@ class SubmarinePlant(PlantBase):
         self.window_with = window_size[0]
 
     def step(self, time_delta):
+        # Apply thrust with saturation
         thrust = self.input.vertical_thrust
         input_bound = self.model_params.KEY_FORCE_SCALE
         lower_bound = -input_bound
@@ -117,7 +190,6 @@ class SubmarinePlant(PlantBase):
 
     def draw(self, screen):
         self.submarine.draw(screen)
-        self.reference_visu.draw(screen)
 
     def input_from_key(self):
         keys = pygame.key.get_pressed()
@@ -129,16 +201,9 @@ class SubmarinePlant(PlantBase):
         return vertical_thrust
 
     def _create_objects(self, window_size):
-        window_width = window_size[0]
         window_height = window_size[1]
-        y_center = window_height / 2
-        self.reference_visu = StaticLine(
-            self.space,
-            (0, y_center),
-            (window_width, y_center),
-            color=(150, 0, 0),
-            thickness=1,
-        )
+
+        # Create submarine
         self.submarine = Submarine(
             self.space, position=(10, window_height * 0.75), width=50, height=20
         )
@@ -148,14 +213,18 @@ class SubmarinePlant(PlantBase):
 
 
 class Game:
-    def __init__(self, plant: SubmarinePlant, controller: ControllerPID):
+    def __init__(
+        self,
+        plant: SubmarinePlant,
+        controller: ControllerPID,
+        reference_signal_object: ReferenceSignal,
+    ):
         # Initialize Pygame and Pymunk
         pygame.init()
         self.clock = pygame.time.Clock()
         # Constants
         self.WIDTH = WINDOW_WIDTH
         self.HEIGHT = WINDOW_HEIGHT
-        self.reference_signal = WINDOW_HEIGHT / 2
         self.game_state = GameState.PAUSED
         self.frames_since_toggle_counter = 0
 
@@ -170,13 +239,18 @@ class Game:
         self.space = pymunk.Space()
         self.plant = plant
         self.controller = controller
+        self.reference_signal_object = reference_signal_object
+        self.reference_signal = reference_signal_object.evaluate(
+            self.plant.submarine.body.position.x
+        )
         self.control_active = False
 
     def update_ui(self):
         # Clear screen
         self.screen.fill((150, 200, 255))
         self.plant.draw(self.screen)
-
+        # Draw reference signal
+        self.reference_signal_object.draw(self.screen, self.WIDTH, self.HEIGHT)
         # Draw control force arrow
         if self.control_active:
             self._draw_control_force_arrow(
@@ -325,6 +399,9 @@ class Game:
                 input_from_key = (
                     self.plant.input_from_key() if not self.control_active else 0.0
                 )
+                self.reference_signal = self.reference_signal_object.evaluate(
+                    self.plant.submarine.body.position.x
+                )
                 control_error = (
                     self.plant.submarine.body.position.y - self.reference_signal
                 )
@@ -355,5 +432,15 @@ if __name__ == "__main__":
     controller = ControllerPID(
         kp=KP_DEFAULT, ki=KI_DEFAULT, kd=KD_DEFAULT, sample_time=SAMPLE_TIME
     )
-    game = Game(plant, controller)
+    game = Game(
+        plant,
+        controller,
+        ReferenceSignal(
+            _create_step_reference_mapping(
+                window_height=WINDOW_HEIGHT,
+                step_height=-WINDOW_HEIGHT // 4,
+                step_position=WINDOW_WIDTH // 2,
+            )
+        ),
+    )
     game.main_loop()
