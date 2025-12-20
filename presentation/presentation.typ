@@ -250,12 +250,11 @@ Gute Gründe:
 #pause
 - Erlaubt große Vielfalt von Anwendungsgebieten
   #pause
-  - Tatsächlich U-Boot Steuerung @Slotine_Lohmiller_1998_ContractionAnalysisNonlinearSystems
+  - Tatsächlich U-Boot Steuerung @Slotine_Lohmiller_1998_ContractionAnalysisNonlinearSystems, @EhrichEtAllMultipleAUVControl2006
   #pause
   - Flugzeug / Raketensteuerung
   #pause
-  - Chemische Reaktoren
-  @Slotine_Lohmiller_1998_ContractionAnalysisNonlinearSystems
+  - Chemische Reaktoren @Slotine_Lohmiller_1998_ContractionAnalysisNonlinearSystems
   #pause
   - Wirtschaftssysteme
   #pause
