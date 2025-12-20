@@ -158,8 +158,6 @@ class SubmarinePlant(PlantBase):
         super().__init__(sample_time=sample_time)
         self.space: pymunk.Space = space
         self.model_params = model_params
-        self.n_inputs: int = 1
-        self.n_outputs: int = 1
         self.window_height = window_size[1]
         self.window_width = window_size[0]
 
@@ -296,8 +294,6 @@ class Game:
     ):
         """Draw an arrow showing the control force magnitude and direction.
 
-        Parameters
-        ----------
         sub_pos : pymunk.Vec2d
             Submarine center position
         force : float
