@@ -11,14 +11,6 @@ class GameControllerBase(ABC):
         # Process system output and return control input
         pass
 
-    @abstractmethod
-    def visualize_control_input(self, control_input):
-        # Visualization code for control input
-        pass
-
-        # Visualization code for PID control input
-        print(f"PID Control Input: {control_input}")
-
 
 class ControllerPID(GameControllerBase):
     def __init__(self, kp: float, ki: float, kd: float, sample_time: float):
@@ -60,11 +52,6 @@ class ControllerPID(GameControllerBase):
 
         return control_signal
 
-    def visualize_control_input(self, display, control_input):
-        # Visualization code for PID control input
-        # print(f"PI Control Input: {control_input}, Integral: {self.integral}")
-        pass
-
 
 class StateFeedbackController(GameControllerBase):
     def __init__(self, gain_matrix, sample_time: float):
@@ -78,7 +65,3 @@ class StateFeedbackController(GameControllerBase):
             state_vector = np.array(state_vector)
         control_signal = -self.gain_matrix @ state_vector
         return control_signal
-
-    def visualize_control_input(self, control_input):
-        # Visualization code for state feedback control input
-        print(f"State Feedback Control Input: {control_input}")
