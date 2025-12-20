@@ -40,6 +40,20 @@
   $dot(x) = A x + B u \ y = C x$
 }
 
+#let with-tech-logos(content) = {
+  stack(
+    dir: ltr,
+    spacing: 1fr,
+    [],
+    grid(
+      columns: (auto, auto),
+      gutter: 5pt,
+      image("images/pymunk_logo_sphinx.png", height: 25pt), image("images/pygame_logo.png", height: 25pt),
+    ),
+  )
+  content
+}
+
 
 // Specify `lang` and `font` for the theme if needed.
 #show: buaa-theme.with(
@@ -104,26 +118,37 @@ Schwerpunkt des heutigen Vortrags:
 #two-column-slide(
   left-content: [
     - Kybernetik ist eine sehr mathematiklastige Disziplin
+      #pause
       - Um die gezeigten Zusammenhänge mathematisch präzise darzustellen, ist viel Vorwissen nötig
+      #pause
       - Hier werden die Zusammenhänge und Ideen intuitiv, ohne mathematische Grundvorraussetzungen dargestellt
+      #pause
       - _Rechte Spalte: Mathematische Darstellungen für Fans, *nicht* nötig fürs Verständnis_
+    #pause
+    - Anschauliche Demos praktischer Anwendung
   ],
   right-content: [Beispiel:\
-    $cal(L){f(t)} = integral_0^infinity f(t) e^(-s t) dif t$ \
+    $cal(L){f}(s) = integral_0^infinity f(t) e^(-s t) dif t$ \
     Unnötige mathematische Ausführungen für unangenehme Besserwisser],
 )
 
 
 = Dynamische Systeme
 == Was ist ein dynamisches System?
-#todo
+#pause
+- Wird durch Eingänge beeinflusst
+#pause
+- Informationen aus Ausgängen sichtbar
+#pause
+- Hat einen internen Zustand, der sein Verhalten beeinflusst
 
 = Beispiel: U-Boot Tiefenregelung
 == U-Boot Tiefenregelung: Problemstellung
 - U-Boot Tiefe soll vorgegebener Linie folgenden
 - Vertikale Kraft kann beeinflusst werden
-*Demo*: _Simulation mit manueller Steuerung (Pfeiltasten)_
-
+#with-tech-logos()[
+  *Demo*: _Simulation mit manueller Steuerung (Pfeiltasten)_
+]
 == U-Boot Tiefenregelung: Regelung via Feedback
 - Ziel: Automatische Regelung der Tiefe
 - Anwendung:* PID Regler*
@@ -131,8 +156,8 @@ Schwerpunkt des heutigen Vortrags:
   - *Integraler Anteil (I)*: Reagiert auf aufsummierten Fehler über Zeit
   - *Differentieller Anteil (D)*: Reagiert auf Änderungsrate des Fehlers
   Verstärkungen der einzelnen Anteile *P, I, D* müssen gewählt werden!
-
-*Demo*: _Simulation mit geregelter Steuerung (PID Regler)_
+#with-tech-logos()[
+  *Demo*: _Simulation mit geregelter Steuerung (PID Regler)_]
 - Feedback: Aktuelle Tiefe wird gemessen und mit gewünschter Tiefe verglichen
 - Regler berechnet Steuerungskraft basierend auf Differenz (Fehler)
 
@@ -145,7 +170,9 @@ Gute Gründe:
 - Betrachtet wurde ein sehr, sehr einfaches Beispiel
 - In der Praxis sind Systeme oft viel komplexer
 - Störungen, Unsicherheiten, Verzögerungen sind in der Praxis unvermeidbar
-
+== Gefahr: Instabilität!
+#with-tech-logos()[
+  *Demo*: _Simulation mit instabilem Regler (hohe P Anteile)_]
 
 == U-Boot Tiefenregelung: Darstellung im Blockdiagramm
 #[
@@ -210,9 +237,7 @@ Gute Gründe:
     caption: [General: Closed Loop],
   ),
 )
-== Gefahr: Instabilität!
 
-*Demo*: _Simulation mit instabilem Regler (hohe P Anteile)_
 = Abstraktion
 == Warum Abstraktion?
 - Systeme können durch mathematische Modelle abstrahiert werden
@@ -399,10 +424,21 @@ Beispiele:
 
 == Also doch Kontrolltheorie
 - Kontrolltheorie über vernetzte Systeme kann zu robustem KI Design beitragen
-- KI braucht riesige Datenmengen für Training, Kontrolltheorie kann helfen, Daten effizienter zu nutzen (Bsp. Individuelle Krebsbehandlung @rantzeretalconvexcancer)
-  - Medikation muss individuell auf jeden Patienten angepasst werden
-  - Unmöglich, für jeden Patienten riesige Datenmengen zu sammeln
-  - Kontrolltheoretische Methoden der Konvexen Optimierung @Boyd_Vandenberghe_2004_ConvexOptimization können helfen, verbesserte Behandlungsstrategien zu finden
+- KI braucht riesige Datenmengen für Training, Kontrolltheorie kann helfen, Daten effizienter zu nutzen
+  - Bsp. Individuelle Krebsbehandlung @rantzeretalconvexcancer)
+    - Medikation muss individuell auf jeden Patienten angepasst werden
+    - Unmöglich, für jeden Patienten riesige Datenmengen zu sammeln
+    - Kontrolltheoretische Methoden der Konvexen Optimierung @Boyd_Vandenberghe_2004_ConvexOptimization können helfen, verbesserte Behandlungsstrategien zu finden
+  - Optimierungsbasierte Algorithmen z.B. im reinforcement Learning Neuronaler Netze
+
+= Metafragen zur Kybernetik
+#pause
+- Löst Kybernetik alle Probleme?
+#pause
+- Ist alles gut, was kybernetisch geregelt ist / wo Kybernetik draufsteht?
+#pause
+- Kann man alles als Kybernetisches System modellieren? Hilft das?
+
 
 = Weitführende Inhalte
 == Wo kann ich mehr dazu finden?
@@ -413,12 +449,14 @@ Beispiele:
 
 == Quellen
 #bibliography("sources.bib")
+
 == Software
-- python
-- pymunk
-- pygame
-- python.control
-- Präsentation: typst
+#with-tech-logos[]
+- `python`: https://www.python.org/
+- `pymunk`: https://pymunk.org/
+- `pygame`: https://www.pygame.org/
+- `python.control`: https://python-control.readthedocs.io/en/latest/
+- Präsentation: *`typst` touying theme* https://typst.app/universe/package/touying/
 
 - Programmcode für Simulationen:
   https://github.com/Dummyrunner/DynamicSimulationDemo
