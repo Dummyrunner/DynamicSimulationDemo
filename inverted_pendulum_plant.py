@@ -82,7 +82,7 @@ class DefaultModelParams:
     CART_WIDTH: int = 100
     CART_HEIGHT: int = 20
     CART_MASS: float = 2000
-    BALL_MASS: float = 90
+    BALL_MASS: float = 1
     FORCE_SCALE: float = 1e7
     GRAVITY: Vec2d = Vec2d(0, 981)
     PENDULUM_LENGTH: float = 280
@@ -117,6 +117,7 @@ class InvertedPendulumPlant(PlantBase):
 
     def step(self, time_delta):
         # Adjustments according to input (cart velocity)
+        print("STEP INPUT FORCE:", self.input.x_force)
         self.cart.body.apply_force_at_local_point((self.input.x_force, 0), (0, 0))
         self.space.step(time_delta)
 

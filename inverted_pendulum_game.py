@@ -15,7 +15,9 @@ import control
 from inverted_pendulum_model import InvertedPendlumModel as IpModel
 from state_space_control_calculations import (
     evaluate_controllability_observability,
+    plot_lti_poles,
 )
+from data_plotter import DataPlotter
 
 SAMPLE_TIME = 1 / 60.0
 INITIAL_KP = 3e7
@@ -41,7 +43,7 @@ class GameState(Enum):
 
 
 class Game:
-    def __init__(self, plant, controller):
+    def __init__(self, plant, controller, data_plotter=None):
         # Initialize Pygame and Pymunk
         pygame.init()
 
@@ -61,6 +63,7 @@ class Game:
         self.plant = plant
         self.controller = controller
         self.control_active = True
+        self.data_plotter = data_plotter
 
         # Set up reference signal slider
         self.reference_signal_slider = Slider(
@@ -78,7 +81,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.simulation_time = 0.0
 
-    def update_ui(self):
+    def update_ui(self, events):
         # Clear screen
         self.screen.fill((255, 255, 255))
         self.plant.draw(self.screen)
@@ -86,6 +89,8 @@ class Game:
         # Draw vertical red dashed line at reference position
         self._draw_reference_position_line()
 
+        # Update widgets and let pygame_widgets handle drawing
+        pygame_widgets.update(events)
         # Display current game state
         self._draw_state_indicator()
 
@@ -202,7 +207,7 @@ class Game:
                 reference_state = np.array(
                     [self.reference_signal_position, 0, self.reference_signal_angle, 0]
                 )
-                difference_vector = -(plant_state - reference_state)
+                difference_vector = -1 * (plant_state - reference_state)
 
                 # Get input from keyboard
                 input_signal_from_key = self.plant.input_from_key()
@@ -213,7 +218,7 @@ class Game:
                     if self.control_active
                     else 0.0
                 )
-
+                print(f"FORCE FROM CONTROL: {force_from_control}")
                 # Combine control and keyboard inputs
                 self.plant.set_input(
                     InvertedPendulumInput(
@@ -222,10 +227,26 @@ class Game:
                 )
 
                 # Update simulation
+                print(
+                    f"Sys State: {self.plant.get_state()}; reference state: {reference_state}"
+                )
                 self.plant.step(SAMPLE_TIME)
                 self.simulation_time += SAMPLE_TIME
 
-            self.update_ui()
+                # Log data to plotter if available
+                if self.data_plotter is not None:
+                    control_error = difference_vector[0]
+                    self.data_plotter.log_data(
+                        control_error=control_error,
+                        cart_position_x=plant_state[0],
+                        cart_velocity_x=plant_state[1],
+                        joint_angle=plant_state[2],
+                        joint_angular_velocity=plant_state[3],
+                        time_delta=SAMPLE_TIME,
+                    )
+                    self.data_plotter.update_plot()
+
+            self.update_ui(events)
 
         pygame.quit()
         sys.exit()
@@ -238,26 +259,27 @@ if __name__ == "__main__":
         mass_pendulum=model_params.BALL_MASS,
         length_pendulum=model_params.PENDULUM_LENGTH,
         gravity=model_params.GRAVITY[1],
-        force_scale=model_params.KEY_FORCE_SCALE,
     )
     sys_ol = control.ss(A, B, C, D)
     print("STATE SPACE SYSTEM REPRESENTATION:\n", sys_ol)
 
     controllable, observable = evaluate_controllability_observability(A, B, C)
-    SCALE = 1
+    SCALE = 1.0
     desired_poles = [
-        SCALE * (-1.6 + 1.3j),
-        SCALE * (-1.6 - 1.3j),
-        SCALE * (-2.0 - 10j),
-        SCALE * (-2.0 + 10j),
+        SCALE * (-1.6 + 0j),
+        SCALE * (-1.7 - 0j),
+        SCALE * (-2.0 - 0j),
+        SCALE * (-2.1 + 0j),
     ]
     B_trp = B.reshape((4, 1))
-    sys_ol_dsc = sys_ol.sample(SAMPLE_TIME, method="zoh")
-    B_dsc_trp = sys_ol_dsc.B.reshape((4, 1))
-    K_lqr_cont, P, _ = control.lqr(A, B_trp, np.diag([1, 1, 10, 1]), np.array([[0.1]]))
-    K_lqr_dsc, P_dsc, _ = control.lqr(
-        sys_ol_dsc.A, B_dsc_trp, np.diag([1, 1, 10, 1]), np.array([[0.1]])
+    # sys_ol_dsc = sys_ol.sample(SAMPLE_TIME, method="zoh")
+    # B_dsc_trp = sys_ol_dsc.B.reshape((4, 1))
+    K_lqr_cont, P, _ = control.lqr(
+        A, B_trp, np.diag([0.01, 0.01, 100, 1]), np.array([[0.01]])
     )
+    # K_lqr_dsc, P_dsc, _ = control.lqr(
+    # sys_ol_dsc.A, B_dsc_trp, np.diag([1, 1, 10, 1]), np.array([[0.1]])
+    # )
     print(f"Desired poles: {desired_poles}")
     K_cont = control.place(A, B, desired_poles)
     # plot_lti_poles(sys_ol, title="System Pole Locations open loop")
@@ -266,35 +288,42 @@ if __name__ == "__main__":
     A_cl = A - B @ K_cont
     sys_cl_cont = control.ss(A_cl, B, C, D)
     sys_cl_cont.set_outputs(["x", "phi"], "y")
-    # plot_lti_poles(
-    #     sys_cl_cont,
-    #     title="System Pole Locations closed Loop",
-    #     figtext=f"controller gains {K_cont}",
-    # )
+    plot_lti_poles(
+        sys_cl_cont,
+        title="System Pole Locations closed Loop",
+        figtext=f"controller gains {K_cont}",
+    )
+    print(f"K_cont: {K_cont}")
     control.step_response(sys_cl_cont).plot()
 
     # Discretize
     dt = SAMPLE_TIME
-    sys_cl_dsc = sys_cl_cont.sample(dt, method="zoh")
+    # sys_cl_dsc = sys_cl_cont.sample(dt, method="zoh")
     desired_poles_dsc = np.exp(np.array(desired_poles) * dt)
     print(f"desired poles discrete: {desired_poles_dsc}")
-    K_dsc = control.place(sys_cl_dsc.A, sys_cl_dsc.B, desired_poles_dsc)
+    # K_dsc = control.place(sys_cl_dsc.A, sys_cl_dsc.B, desired_poles_dsc)
     # plot_lti_poles(
-    #     sys_cl_dsc,
-    #     title="Discrete System Pole Locations closed Loop",
-    #     figtext=f"controller gains {K_cont}",
+    # sys_cl_dsc,
+    # title="Discrete System Pole Locations closed Loop",
+    # figtext=f"controller gains {K_cont}",
     # )
     # control.step_response(sys_cl_dsc).plot()
     # plt.show()
-    state_feedback_controller_gain_matrix = K_dsc
+    # state_feedback_controller_gain_matrix = K_dsc
     plant = InvertedPendulumPlant(
         pymunk.Space(), (WINDOW_WIDTH, WINDOW_HEIGHT), SAMPLE_TIME
     )
     controller = StateFeedbackController(
-        gain_matrix=state_feedback_controller_gain_matrix, sample_time=SAMPLE_TIME
+        gain_matrix=10 * K_lqr_cont, sample_time=SAMPLE_TIME
     )
+
+    # Optional: Create data plotter for live visualization
+    data_plotter = DataPlotter(max_points=1000, update_interval=10)
+    data_plotter.show_live()
+
     game = Game(
         plant=plant,
         controller=controller,
+        data_plotter=data_plotter,
     )
     game.main_loop()
