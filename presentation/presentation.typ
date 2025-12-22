@@ -1,6 +1,9 @@
 #import "@preview/touying:0.5.2": *
 #import "@preview/touying-buaa:0.2.0": *
 
+// Define handout with a default value of false if not provided by wrapper
+#let handout = false
+
 #let wissen_ist_nacht_datum = datetime(
   year: 2025,
   month: 12,
@@ -57,7 +60,11 @@
 
 // Specify `lang` and `font` for the theme if needed.
 #show: buaa-theme.with(
-  // config-common(handout: true),
+  if handout {
+    config-common(handout: true)
+  } else {
+    config-common(handout: false)
+  },
   config-info(
     title: [Kybernetisches Denken],
     subtitle: [Eine Einführung ohne mathematisches Bla Bla],
@@ -154,16 +161,13 @@ Schwerpunkt des heutigen Vortrags:
 - Ziel: Automatische Regelung der Tiefe
 #tblock(title: "Feedback")[
   Bestimme Steuerungskraft (ehem. bestimmt durch Tastendruck) basierend auf aktuellem Fehler]
-
 - Wie Steuerungssignal berechnen? -> * PID Regler*
   - *Proportionaler Anteil (P)*: Reagiert auf aktuellen Fehler
   - *Integraler Anteil (I)*: Reagiert auf aufsummierten Fehler über Zeit
   - *Differentieller Anteil (D)*: Reagiert auf Änderungsrate des Fehlers
   Verstärkungen der einzelnen Anteile *P, I, D* müssen gewählt werden!
-#with-tech-logos()[
-  *Demo*: _Simulation mit geregelter Steuerung (PID Regler)_]
-- Feedback: Aktuelle Tiefe wird gemessen und mit gewünschter Tiefe verglichen
-- Regler berechnet Steuerungskraft basierend auf Differenz (Fehler)
+  *Demo*: _Simulation mit geregelter Steuerung (PID Regler)_
+  - Feedback: Aktuelle Tiefe wird gemessen und mit gewünschter Tiefe verglichen
 
 = Weitere Konzepte
 == Warum nicht Feierabend?
