@@ -16,7 +16,7 @@ WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
 
 KP_DEFAULT = -2800
-KI_DEFAULT = -100
+KI_DEFAULT = 0
 KD_DEFAULT = -3800
 
 
@@ -374,7 +374,7 @@ class Game:
         while running:
             if self.plant.submarine.body.position.x > self.WIDTH:
                 self.game_state = GameState.FINISHED
-                self._display_least_squares_score(least_squares_score)
+                self._display_least_squares_score(least_squares_score / 1e5)
             self.frames_since_toggle_counter += 1
             events = pygame.event.get()
             for event in events:
