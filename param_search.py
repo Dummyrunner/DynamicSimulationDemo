@@ -107,15 +107,15 @@ def run_single_simulation_headless(
 
 def save_results_to_file(results_list: list, filename: str = None):
     """
-    Save pole search results to a JSON file.
+    Save param search results to a JSON file.
 
     Args:
-        results_list: List of tuples (pole1, pole2, score)
-        filename: Output filename for results. If None, generates name from pole ranges.
+        results_list: List of tuples (param1, param2, score)
+        filename: Output filename for results. If None, generates name from param ranges.
     """
     if filename is None:
         filename = (
-            f"pole_search_results_"
+            f"param_search_results_"
             f"p1_{PARAM1_MIN}_to_{PARAM1_MAX}_s{PARAM1_STEP}_"
             f"p2_{PARAM2_MIN}_to_{PARAM2_MAX}_s{PARAM2_STEP}.json"
         )
@@ -132,7 +132,7 @@ def save_results_to_file(results_list: list, filename: str = None):
             "total_simulations": len(results_list),
         },
         "results": [
-            {"pole1": float(p1), "pole2": float(p2), "score": float(score)}
+            {"param1": float(p1), "param2": float(p2), "score": float(score)}
             for p1, p2, score in results_list
         ],
     }
@@ -321,8 +321,8 @@ def param_search(num_workers: int = None):
 
     # Save results to file and create heatmap
     print("\n" + "=" * 80)
-    save_results_to_file(results_list, "pole_search_results.json")
-    create_heatmap(results_list, "pole_search_heatmap.png")
+    save_results_to_file(results_list)
+    create_heatmap(results_list)
     print("=" * 80)
 
     return best_result, sorted_results
