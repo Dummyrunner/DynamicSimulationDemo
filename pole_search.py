@@ -28,13 +28,13 @@ from submarine_pole_placement import (
 )
 
 # Pole search parameters - individual min/max for each pole
-POLE1_MIN = -100
-POLE1_MAX = -5
-POLE1_STEP = 2
+POLE1_MIN = -9980
+POLE1_MAX = -9940
+POLE1_STEP = 0.1
 
-POLE2_MIN = -100
-POLE2_MAX = -5
-POLE2_STEP = 2
+POLE2_MIN = -3
+POLE2_MAX = -2
+POLE2_STEP = 0.1
 
 # Generate ranges for each pole
 POLE1_RANGE = np.arange(POLE1_MIN, POLE1_MAX + POLE1_STEP, POLE1_STEP)

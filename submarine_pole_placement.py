@@ -16,7 +16,7 @@ SAMPLE_TIME = 1 / 60.0
 WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
 
-DESIRED_POLES = np.array([40 + 10j, 40 - 10j])
+DESIRED_POLES = np.array([-9966.6, -2.4])
 
 
 class GameState(Enum):
