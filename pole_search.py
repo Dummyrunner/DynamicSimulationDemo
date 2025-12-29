@@ -27,11 +27,18 @@ from submarine_pole_placement import (
     WINDOW_HEIGHT,
 )
 
-# Pole search parameters
-POLE_MIN = -100
-POLE_MAX = -5
-POLE_STEP = 5
-POLE_RANGE = np.arange(POLE_MIN, POLE_MAX + POLE_STEP, POLE_STEP)
+# Pole search parameters - individual min/max for each pole
+POLE1_MIN = -100
+POLE1_MAX = -5
+POLE1_STEP = 2
+
+POLE2_MIN = -100
+POLE2_MAX = -5
+POLE2_STEP = 2
+
+# Generate ranges for each pole
+POLE1_RANGE = np.arange(POLE1_MIN, POLE1_MAX + POLE1_STEP, POLE1_STEP)
+POLE2_RANGE = np.arange(POLE2_MIN, POLE2_MAX + POLE2_STEP, POLE2_STEP)
 
 
 def run_single_simulation_headless(
@@ -107,20 +114,30 @@ def run_single_simulation_headless(
     return pole1, pole2, least_squares_score / 1e5
 
 
-def save_results_to_file(results_list: list, filename: str = "pole_search_results.json"):
+def save_results_to_file(results_list: list, filename: str = None):
     """
     Save pole search results to a JSON file.
 
     Args:
         results_list: List of tuples (pole1, pole2, score)
-        filename: Output filename for results
+        filename: Output filename for results. If None, generates name from pole ranges.
     """
+    if filename is None:
+        filename = (
+            f"pole_search_results_"
+            f"p1_{POLE1_MIN}_to_{POLE1_MAX}_s{POLE1_STEP}_"
+            f"p2_{POLE2_MIN}_to_{POLE2_MAX}_s{POLE2_STEP}.json"
+        )
     data = {
         "grid_parameters": {
-            "pole_min": float(POLE_MIN),
-            "pole_max": float(POLE_MAX),
-            "pole_step": float(POLE_STEP),
-            "num_poles": len(POLE_RANGE),
+            "pole1_min": float(POLE1_MIN),
+            "pole1_max": float(POLE1_MAX),
+            "pole1_step": float(POLE1_STEP),
+            "pole2_min": float(POLE2_MIN),
+            "pole2_max": float(POLE2_MAX),
+            "pole2_step": float(POLE2_STEP),
+            "num_pole1_values": len(POLE1_RANGE),
+            "num_pole2_values": len(POLE2_RANGE),
             "total_simulations": len(results_list),
         },
         "results": [
@@ -135,14 +152,20 @@ def save_results_to_file(results_list: list, filename: str = "pole_search_result
     print(f"Results saved to {filename}")
 
 
-def create_heatmap(results_list: list, filename: str = "pole_search_heatmap.png"):
+def create_heatmap(results_list: list, filename: str = None):
     """
     Create a heatmap visualization of the pole search results.
 
     Args:
         results_list: List of tuples (pole1, pole2, score)
-        filename: Output filename for the heatmap image
+        filename: Output filename for the heatmap image. If None, generates name from pole ranges.
     """
+    if filename is None:
+        filename = (
+            f"pole_search_heatmap_"
+            f"p1_{POLE1_MIN}_to_{POLE1_MAX}_s{POLE1_STEP}_"
+            f"p2_{POLE2_MIN}_to_{POLE2_MAX}_s{POLE2_STEP}.png"
+        )
     import matplotlib.pyplot as plt
 
     # Create 2D grid
@@ -162,9 +185,7 @@ def create_heatmap(results_list: list, filename: str = "pole_search_heatmap.png"
 
     # Filter out infinite scores for visualization
     valid_results = [
-        (p1, p2, score)
-        for p1, p2, score in results_list
-        if np.isfinite(score)
+        (p1, p2, score) for p1, p2, score in results_list if np.isfinite(score)
     ]
 
     if valid_results:
@@ -174,6 +195,7 @@ def create_heatmap(results_list: list, filename: str = "pole_search_heatmap.png"
 
         # Normalize scores for coloring (green=low, red=high)
         from matplotlib.colors import Normalize
+
         norm = Normalize(vmin=min(valid_scores), vmax=max(valid_scores))
 
         scatter = ax.scatter(
@@ -209,7 +231,11 @@ def create_heatmap(results_list: list, filename: str = "pole_search_heatmap.png"
 
     ax.set_xlabel("Pole 1", fontsize=12, fontweight="bold")
     ax.set_ylabel("Pole 2", fontsize=12, fontweight="bold")
-    ax.set_title("Pole Placement Optimization Heatmap\n(Green = Low Error, Red = High Error)", fontsize=14, fontweight="bold")
+    ax.set_title(
+        "Pole Placement Optimization Heatmap\n(Green = Low Error, Red = High Error)",
+        fontsize=14,
+        fontweight="bold",
+    )
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=10)
 
@@ -229,19 +255,19 @@ def pole_search(num_workers: int = None):
     if num_workers is None:
         num_workers = cpu_count()
 
+    print("Pole Search:")
+    print(f"  Pole 1: [{POLE1_MIN}, {POLE1_MAX}] with step {POLE1_STEP}")
+    print(f"  Pole 2: [{POLE2_MIN}, {POLE2_MAX}] with step {POLE2_STEP}")
     print(
-        f"Pole Search: varying poles from {POLE_MIN} to {POLE_MAX} with step {POLE_STEP}"
-    )
-    print(
-        f"Grid size: {len(POLE_RANGE)} x {len(POLE_RANGE)} = {len(POLE_RANGE) ** 2} simulations"
+        f"Grid size: {len(POLE1_RANGE)} x {len(POLE2_RANGE)} = {len(POLE1_RANGE) * len(POLE2_RANGE)} simulations"
     )
     print(f"Using {num_workers} worker processes")
     print("=" * 80)
 
     # Create all pole configurations
     pole_configs = []
-    for pole1 in POLE_RANGE:
-        for pole2 in POLE_RANGE:
+    for pole1 in POLE1_RANGE:
+        for pole2 in POLE2_RANGE:
             pole_configs.append((pole1, pole2))
 
     # Run simulations in parallel
