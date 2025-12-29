@@ -12,9 +12,10 @@ import control
 from multiprocessing import Pool, cpu_count
 import time
 import json
+from dataclasses import dataclass
 
 from submarine_model import SubmarineModel
-from game_controller import StateFeedbackController
+from game_controller import StateFeedbackController, GameControllerBase
 from submarine_pole_placement import (
     DefaultSubmarineModelParams,
     SubmarineInput,
@@ -28,53 +29,43 @@ from submarine_pole_placement import (
 )
 
 # Pole search parameters - individual min/max for each pole
-POLE1_MIN = -9980
-POLE1_MAX = -9940
-POLE1_STEP = 0.1
+PARAM1_MIN = -9980
+PARAM1_MAX = -9940
+PARAM1_STEP = 0.1
 
-POLE2_MIN = -3
-POLE2_MAX = -2
-POLE2_STEP = 0.1
+PARAM2_MIN = -3
+PARAM2_MAX = -2
+PARAM2_STEP = 0.1
 
 # Generate ranges for each pole
-POLE1_RANGE = np.arange(POLE1_MIN, POLE1_MAX + POLE1_STEP, POLE1_STEP)
-POLE2_RANGE = np.arange(POLE2_MIN, POLE2_MAX + POLE2_STEP, POLE2_STEP)
+PARAM1_RANGE = np.arange(PARAM1_MIN, PARAM1_MAX + PARAM1_STEP, PARAM1_STEP)
+PARAM2_RANGE = np.arange(PARAM2_MIN, PARAM2_MAX + PARAM2_STEP, PARAM2_STEP)
+
+
+@dataclass
+class SimulationRunConfig:
+    param_set: Tuple[float, float]
+    plant: SubmarinePlant
+    controller: GameControllerBase
 
 
 def run_single_simulation_headless(
-    pole_config: Tuple[float, float],
+    simulation_run_config: SimulationRunConfig,
 ) -> Tuple[float, float, float]:
     """
     Run a single simulation with given poles and return the least squares score.
     This version runs without rendering for maximum speed.
 
     Args:
-        pole_config: Tuple of (pole1, pole2)
+        pole_config: Tuple of (param1, param2)
 
     Returns:
-        Tuple of (pole1, pole2, least_squares_score)
+        Tuple of (param1, param2, least_squares_score)
     """
-    pole1, pole2 = pole_config
-
-    # Create state space model
-    A, B, C, D = SubmarineModel.state_space_model_matrices(
-        mass_submarine=DefaultSubmarineModelParams.SUMBARINE_MASS
-    )
-
-    # Design controller using pole placement
-    desired_poles = np.array([pole1, pole2])
-    try:
-        k_controller = control.place(A, B, desired_poles)
-    except Exception:
-        return pole1, pole2, float("inf")
-
-    # Create plant and controller
-    plant = SubmarinePlant(
-        pymunk.Space(),
-        window_size=(WINDOW_WIDTH, WINDOW_HEIGHT),
-        sample_time=SAMPLE_TIME,
-    )
-    controller = StateFeedbackController(k_controller, sample_time=SAMPLE_TIME)
+    cfg = simulation_run_config
+    param1, param2 = cfg.param_set
+    plant = cfg.plant
+    controller = cfg.controller
 
     # Create reference signal
     reference_signal = ReferenceSignal(
@@ -111,7 +102,7 @@ def run_single_simulation_headless(
         least_squares_score += position_error**2
         plant.step(SAMPLE_TIME)
 
-    return pole1, pole2, least_squares_score / 1e5
+    return param1, param2, least_squares_score / 1e5
 
 
 def save_results_to_file(results_list: list, filename: str = None):
@@ -125,19 +116,19 @@ def save_results_to_file(results_list: list, filename: str = None):
     if filename is None:
         filename = (
             f"pole_search_results_"
-            f"p1_{POLE1_MIN}_to_{POLE1_MAX}_s{POLE1_STEP}_"
-            f"p2_{POLE2_MIN}_to_{POLE2_MAX}_s{POLE2_STEP}.json"
+            f"p1_{PARAM1_MIN}_to_{PARAM1_MAX}_s{PARAM1_STEP}_"
+            f"p2_{PARAM2_MIN}_to_{PARAM2_MAX}_s{PARAM2_STEP}.json"
         )
     data = {
         "grid_parameters": {
-            "pole1_min": float(POLE1_MIN),
-            "pole1_max": float(POLE1_MAX),
-            "pole1_step": float(POLE1_STEP),
-            "pole2_min": float(POLE2_MIN),
-            "pole2_max": float(POLE2_MAX),
-            "pole2_step": float(POLE2_STEP),
-            "num_pole1_values": len(POLE1_RANGE),
-            "num_pole2_values": len(POLE2_RANGE),
+            "param1_min": float(PARAM1_MIN),
+            "param1_max": float(PARAM1_MAX),
+            "param1_step": float(PARAM1_STEP),
+            "param2_min": float(PARAM2_MIN),
+            "param2_max": float(PARAM2_MAX),
+            "param2_step": float(PARAM2_STEP),
+            "num_param1_values": len(PARAM1_RANGE),
+            "num_param2_values": len(PARAM2_RANGE),
             "total_simulations": len(results_list),
         },
         "results": [
@@ -163,8 +154,8 @@ def create_heatmap(results_list: list, filename: str = None):
     if filename is None:
         filename = (
             f"pole_search_heatmap_"
-            f"p1_{POLE1_MIN}_to_{POLE1_MAX}_s{POLE1_STEP}_"
-            f"p2_{POLE2_MIN}_to_{POLE2_MAX}_s{POLE2_STEP}.png"
+            f"p1_{PARAM1_MIN}_to_{PARAM1_MAX}_s{PARAM1_STEP}_"
+            f"p2_{PARAM2_MIN}_to_{PARAM2_MAX}_s{PARAM2_STEP}.png"
         )
     import matplotlib.pyplot as plt
 
@@ -245,9 +236,9 @@ def create_heatmap(results_list: list, filename: str = None):
     plt.close()
 
 
-def pole_search(num_workers: int = None):
+def param_search(num_workers: int = None):
     """
-    Run pole search over a grid of pole values using parallel processing.
+    Run param search over a grid of param values using parallel processing.
 
     Args:
         num_workers: Number of worker processes. If None, uses all available cores.
@@ -255,26 +246,40 @@ def pole_search(num_workers: int = None):
     if num_workers is None:
         num_workers = cpu_count()
 
-    print("Pole Search:")
-    print(f"  Pole 1: [{POLE1_MIN}, {POLE1_MAX}] with step {POLE1_STEP}")
-    print(f"  Pole 2: [{POLE2_MIN}, {POLE2_MAX}] with step {POLE2_STEP}")
+    print("param Search:")
+    print(f"  param 1: [{PARAM1_MIN}, {PARAM1_MAX}] with step {PARAM1_STEP}")
+    print(f"  param 2: [{PARAM2_MIN}, {PARAM2_MAX}] with step {PARAM2_STEP}")
     print(
-        f"Grid size: {len(POLE1_RANGE)} x {len(POLE2_RANGE)} = {len(POLE1_RANGE) * len(POLE2_RANGE)} simulations"
+        f"Grid size: {len(PARAM1_RANGE)} x {len(PARAM2_RANGE)} = {len(PARAM1_RANGE) * len(PARAM2_RANGE)} simulations"
     )
     print(f"Using {num_workers} worker processes")
     print("=" * 80)
 
     # Create all pole configurations
-    pole_configs = []
-    for pole1 in POLE1_RANGE:
-        for pole2 in POLE2_RANGE:
-            pole_configs.append((pole1, pole2))
+    run_configs = []
+    for pole1 in PARAM1_RANGE:
+        for pole2 in PARAM2_RANGE:
+            A, B, _, _ = SubmarineModel.state_space_model_matrices(
+                DefaultSubmarineModelParams.SUMBARINE_MASS
+            )
+            gain_matrix = control.place(A, B, (pole1, pole2))
+            run_configs.append(
+                SimulationRunConfig(
+                    param_set=(pole1, pole2),
+                    plant=SubmarinePlant(
+                        pymunk.Space(),
+                        window_size=(WINDOW_WIDTH, WINDOW_HEIGHT),
+                        sample_time=SAMPLE_TIME,
+                    ),
+                    controller=StateFeedbackController(gain_matrix, SAMPLE_TIME),
+                ),
+            )
 
     # Run simulations in parallel
     start_time = time.time()
 
     with Pool(processes=num_workers) as pool:
-        results = pool.imap_unordered(run_single_simulation_headless, pole_configs)
+        results = pool.imap_unordered(run_single_simulation_headless, run_configs)
 
         results_list = []
         for i, result in enumerate(results, 1):
@@ -284,10 +289,10 @@ def pole_search(num_workers: int = None):
             # Print progress
             elapsed = time.time() - start_time
             rate = i / elapsed if elapsed > 0 else 0
-            remaining = (len(pole_configs) - i) / rate if rate > 0 else 0
+            remaining = (len(run_configs) - i) / rate if rate > 0 else 0
 
             print(
-                f"[{i}/{len(pole_configs)}] Poles: ({pole1:6.1f}, {pole2:6.1f}) -> "
+                f"[{i}/{len(run_configs)}] Poles: ({pole1:6.1f}, {pole2:6.1f}) -> "
                 f"Score: {score:10.2f} | "
                 f"Elapsed: {elapsed:6.1f}s | "
                 f"Remaining: {remaining:6.1f}s"
@@ -305,7 +310,7 @@ def pole_search(num_workers: int = None):
     print(f"  Pole 2: {best_pole2:.1f}")
     print(f"  Least Squares Score: {best_score:.2f}")
     print(f"  Total Time: {elapsed_total:.2f}s")
-    print(f"  Average Time per Simulation: {elapsed_total / len(pole_configs):.3f}s")
+    print(f"  Average Time per Simulation: {elapsed_total / len(run_configs):.3f}s")
     print("=" * 80)
 
     # Print top 10 results
@@ -328,6 +333,6 @@ if __name__ == "__main__":
     print(f"CPU Cores Available: {cpu_count()}")
     print()
 
-    best_result, all_results = pole_search()
+    best_result, all_results = param_search()
 
-    print("\nPole search complete!")
+    print("\nParameter search complete!")
