@@ -15,7 +15,7 @@ import json
 from dataclasses import dataclass
 
 from submarine_model import SubmarineModel
-from game_controller import StateFeedbackController, GameControllerBase
+from game_controller import ControllerPID, StateFeedbackController, GameControllerBase
 from submarine_pole_placement import (
     DefaultSubmarineModelParams,
     SubmarineInput,
@@ -28,13 +28,13 @@ from submarine_pole_placement import (
     WINDOW_HEIGHT,
 )
 
-# Pole search parameters - individual min/max for each pole
-PARAM1_MIN = -9980
-PARAM1_MAX = -9940
+# Param search parameters - individual min/max for each param
+PARAM1_MIN = -6500
+PARAM1_MAX = -6490
 PARAM1_STEP = 0.1
 
-PARAM2_MIN = -3
-PARAM2_MAX = -2
+PARAM2_MIN = -4500
+PARAM2_MAX = -4495
 PARAM2_STEP = 0.1
 
 # Generate ranges for each pole
@@ -53,11 +53,11 @@ def run_single_simulation_headless(
     simulation_run_config: SimulationRunConfig,
 ) -> Tuple[float, float, float]:
     """
-    Run a single simulation with given poles and return the least squares score.
+    Run a single simulation with given params and return the least squares score.
     This version runs without rendering for maximum speed.
 
     Args:
-        pole_config: Tuple of (param1, param2)
+        param_config: Tuple of (param1, param2)
 
     Returns:
         Tuple of (param1, param2, least_squares_score)
@@ -91,12 +91,12 @@ def run_single_simulation_headless(
         current_system_state = plant.get_state()
         position_error = current_system_state.depth - reference_signal_value
 
-        current_system_state_error = SubmarineState(
-            depth=position_error,
-            vertical_velocity=current_system_state.vertical_velocity,
-        )
+        # current_system_state_error = SubmarineState(
+        #     depth=position_error,
+        #     vertical_velocity=current_system_state.vertical_velocity,
+        # )
 
-        input_from_controller = controller.get_control_input(current_system_state_error)
+        input_from_controller = controller.get_control_input(position_error)
 
         plant.set_input(SubmarineInput(vertical_thrust=input_from_controller))
         least_squares_score += position_error**2
@@ -153,22 +153,22 @@ def create_heatmap(results_list: list, filename: str = None):
     """
     if filename is None:
         filename = (
-            f"pole_search_heatmap_"
+            f"param_search_heatmap_"
             f"p1_{PARAM1_MIN}_to_{PARAM1_MAX}_s{PARAM1_STEP}_"
             f"p2_{PARAM2_MIN}_to_{PARAM2_MAX}_s{PARAM2_STEP}.png"
         )
     import matplotlib.pyplot as plt
 
     # Create 2D grid
-    pole1_values = sorted(set(p1 for p1, p2, _ in results_list))
-    pole2_values = sorted(set(p2 for p1, p2, _ in results_list))
+    param1_values = sorted(set(p1 for p1, p2, _ in results_list))
+    param2_values = sorted(set(p2 for p1, p2, _ in results_list))
 
     # Create score matrix (not currently used but kept for future contour plots)
-    score_matrix = np.full((len(pole2_values), len(pole1_values)), np.nan)
+    score_matrix = np.full((len(param2_values), len(param1_values)), np.nan)
 
     for p1, p2, score in results_list:
-        i = pole1_values.index(p1)
-        j = pole2_values.index(p2)
+        i = param1_values.index(p1)
+        j = param2_values.index(p2)
         score_matrix[j, i] = score
 
     # Create figure and plot
@@ -220,10 +220,10 @@ def create_heatmap(results_list: list, filename: str = None):
             zorder=5,
         )
 
-    ax.set_xlabel("Pole 1", fontsize=12, fontweight="bold")
-    ax.set_ylabel("Pole 2", fontsize=12, fontweight="bold")
+    ax.set_xlabel("Parameter 1", fontsize=12, fontweight="bold")
+    ax.set_ylabel("Parameter 2", fontsize=12, fontweight="bold")
     ax.set_title(
-        "Pole Placement Optimization Heatmap\n(Green = Low Error, Red = High Error)",
+        "Parameter Optimization Heatmap\n(Green = Low Error, Red = High Error)",
         fontsize=14,
         fontweight="bold",
     )
@@ -257,21 +257,25 @@ def param_search(num_workers: int = None):
 
     # Create all pole configurations
     run_configs = []
-    for pole1 in PARAM1_RANGE:
-        for pole2 in PARAM2_RANGE:
+    for param1 in PARAM1_RANGE:
+        for param2 in PARAM2_RANGE:
             A, B, _, _ = SubmarineModel.state_space_model_matrices(
                 DefaultSubmarineModelParams.SUMBARINE_MASS
             )
-            gain_matrix = control.place(A, B, (pole1, pole2))
+            # gain_matrix = control.place(A, B, (param1, param2))
+            Ki = 0
+            Kp = param1
+            Kd = param2
             run_configs.append(
                 SimulationRunConfig(
-                    param_set=(pole1, pole2),
+                    param_set=(param1, param2),
                     plant=SubmarinePlant(
                         pymunk.Space(),
                         window_size=(WINDOW_WIDTH, WINDOW_HEIGHT),
                         sample_time=SAMPLE_TIME,
                     ),
-                    controller=StateFeedbackController(gain_matrix, SAMPLE_TIME),
+                    # controller=StateFeedbackController(gain_matrix, SAMPLE_TIME),
+                    controller=ControllerPID(Kp, Ki, Kd, SAMPLE_TIME),
                 ),
             )
 
@@ -283,8 +287,8 @@ def param_search(num_workers: int = None):
 
         results_list = []
         for i, result in enumerate(results, 1):
-            pole1, pole2, score = result
-            results_list.append((pole1, pole2, score))
+            param1, param2, score = result
+            results_list.append((param1, param2, score))
 
             # Print progress
             elapsed = time.time() - start_time
@@ -292,7 +296,7 @@ def param_search(num_workers: int = None):
             remaining = (len(run_configs) - i) / rate if rate > 0 else 0
 
             print(
-                f"[{i}/{len(run_configs)}] Poles: ({pole1:6.1f}, {pole2:6.1f}) -> "
+                f"[{i}/{len(run_configs)}] Poles: ({param1:6.1f}, {param2:6.1f}) -> "
                 f"Score: {score:10.2f} | "
                 f"Elapsed: {elapsed:6.1f}s | "
                 f"Remaining: {remaining:6.1f}s"
