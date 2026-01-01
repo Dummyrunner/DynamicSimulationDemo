@@ -76,26 +76,13 @@ class StaticLine(VisualObject):
         )
 
 
-@dataclass
-class DefaultModelParams:
-    CART_MAX_SPEED: int = 1200
-    CART_WIDTH: int = 100
-    CART_HEIGHT: int = 20
-    CART_MASS: float = 2000
-    BALL_MASS: float = 1
-    FORCE_SCALE: float = 1e7
-    GRAVITY: Vec2d = Vec2d(0, 981)
-    PENDULUM_LENGTH: float = 280
-    KEY_FORCE_SCALE: float = 1e7
-
-
 class InvertedPendulumPlant(PlantBase):
     def __init__(
         self,
         space: pymunk.Space,
         window_size: tuple,
         sample_time: float,
-        model_params=DefaultModelParams,
+        model_params,
     ):
         super().__init__(sample_time=sample_time)
         self.space: pymunk.Space = space

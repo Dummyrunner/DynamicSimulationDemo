@@ -6,7 +6,6 @@ from game_controller import StateFeedbackController
 from inverted_pendulum_plant import (
     InvertedPendulumPlant,
     InvertedPendulumInput,
-    DefaultModelParams,
 )
 from pygame_widgets.slider import Slider
 import pygame_widgets
@@ -18,6 +17,8 @@ from state_space_control_calculations import (
     plot_lti_poles,
 )
 from data_plotter import DataPlotter
+from dataclasses import dataclass
+from pymunk import Vec2d
 
 SAMPLE_TIME = 1 / 60.0
 INITIAL_KP = 3e7
@@ -31,6 +32,19 @@ SLIDER_POS_X = int(WINDOW_WIDTH * 0.2)
 SLIDER_POS_Y = int(WINDOW_HEIGHT * 0.9)
 SLIDER_WIDTH = int(WINDOW_WIDTH * 0.6)
 SLIDER_HEIGHT = 20
+
+
+@dataclass
+class DefaultModelParams:
+    CART_MAX_SPEED: int = 1200
+    CART_WIDTH: int = 100
+    CART_HEIGHT: int = 20
+    CART_MASS: float = 200
+    BALL_MASS: float = 1
+    FORCE_SCALE: float = 1e7
+    GRAVITY: Vec2d = Vec2d(0, 981)
+    PENDULUM_LENGTH: float = 280
+    # KEY_FORCE_SCALE: float = 1e7
 
 
 class GameState(Enum):
@@ -311,7 +325,7 @@ if __name__ == "__main__":
     # plt.show()
     # state_feedback_controller_gain_matrix = K_dsc
     plant = InvertedPendulumPlant(
-        pymunk.Space(), (WINDOW_WIDTH, WINDOW_HEIGHT), SAMPLE_TIME
+        pymunk.Space(), (WINDOW_WIDTH, WINDOW_HEIGHT), SAMPLE_TIME, DefaultModelParams
     )
     controller = StateFeedbackController(
         gain_matrix=10 * K_lqr_cont, sample_time=SAMPLE_TIME
@@ -321,9 +335,5 @@ if __name__ == "__main__":
     data_plotter = DataPlotter(max_points=1000, update_interval=10)
     data_plotter.show_live()
 
-    game = Game(
-        plant=plant,
-        controller=controller,
-        data_plotter=data_plotter,
-    )
+    game = Game(plant=plant, controller=controller, data_plotter=None)
     game.main_loop()
