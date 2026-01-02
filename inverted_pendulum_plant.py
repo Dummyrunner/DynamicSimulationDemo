@@ -2,10 +2,10 @@ import pygame
 import pymunk
 from pymunk import Vec2d
 from typing import NamedTuple
+import numpy as np
 from plant_base import PlantBase
 from physical_objects import PinJointConnection, Ball, DynamicCart
 import math_helpers
-from dataclasses import dataclass
 
 
 class InvertedPendulumOutput(NamedTuple):
@@ -103,9 +103,14 @@ class InvertedPendulumPlant(PlantBase):
         )
 
     def step(self, time_delta):
-        # Adjustments according to input (cart velocity)
-        print("STEP INPUT FORCE:", self.input.x_force)
-        self.cart.body.apply_force_at_local_point((self.input.x_force, 0), (0, 0))
+        # Apply thrust with saturation
+        thrust = self.input.x_force
+        input_bound = self.model_params.FORCE_SCALE
+        lower_bound = -input_bound
+        upper_bound = input_bound
+        saturated_thrust = np.clip(lower_bound, upper_bound, thrust)
+        print("STEP INPUT FORCE:", saturated_thrust)
+        self.cart.body.apply_force_at_local_point((saturated_thrust, 0), (0, 0))
         self.space.step(time_delta)
 
     def get_state(self) -> "InvertedPendulumState":
